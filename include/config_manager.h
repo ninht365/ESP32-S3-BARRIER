@@ -5,7 +5,7 @@
 #include <Preferences.h>
 #include <Ethernet.h>
 
-// Đọc cấu hình mạng từ NVS khi khởi động
+// Đọc cấu hình mạng từ NVS khi khởi động fgfg
 void Config_Init();
 
 // Lấy giá trị IP hiện tại (đã đọc từ NVS hoặc mặc định)
