@@ -375,7 +375,7 @@ for (let i=1;i<=8;i++) {
     <div class="ch-dot" id="dot-ch${i}"></div>
     <div class="ch-label"><strong>CH${i}</strong></div>
     <div class="ch-btns">
-      <button class="ch-btn pulse" onclick="hwPulse(${i})">XUNG</button>
+      <button class="ch-btn pulse" onclick="hwPulse(${i})">TEST</button>
       <button class="ch-btn on"    onclick="hwOn(${i})">BẬT</button>
       <button class="ch-btn off"   onclick="hwOff(${i})">TẮT</button>
     </div>
