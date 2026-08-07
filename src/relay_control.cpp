@@ -84,14 +84,6 @@ void Relay_Loop() {
                        + String(ch) + ",\"timestamp_ms\":" + String(now) + "}";
             TcpPush_Broadcast(evt);
             Serial.printf("[RELAY] CH%d -> OFF (ket thuc xung)\n", ch);
-
-            // Neu day la kenh MO (CH1) hoac DONG (CH3) -> ket thuc xung 500ms, ve IDLE
-            if ((ch == BARRIER_CH_OPEN && barrierState == BARRIER_OPENING) ||
-                (ch == BARRIER_CH_CLOSE && barrierState == BARRIER_CLOSING)) {
-                barrierState = BARRIER_IDLE;
-                TcpPush_Broadcast("{\"event\":\"barrier_state\",\"barrier\":1,\"state\":\"IDLE\",\"timestamp_ms\":" + String(now) + "}");
-                Serial.printf("[BARRIER] CH%d xung xong 500ms -> IDLE\n", ch);
-            }
         }
     }
 }
@@ -114,78 +106,69 @@ const char* Relay_BarrierStateName() {
 }
 
 BarrierResult Relay_BarrierCmd(uint8_t action_ch, uint16_t duration_ms) {
-    if (duration_ms == 0) duration_ms = 500; // Mac dinh 500ms cho MO / DONG
+    (void)duration_ms; // Tat ca 3 kenh deu o che do GIU MAI (hold mode), khong tu dong nha
     unsigned long now = millis();
-    bool isStop  = (action_ch == BARRIER_CH_STOP);
-    bool isOpen  = (action_ch == BARRIER_CH_OPEN);
-    bool isClose = (action_ch == BARRIER_CH_CLOSE);
+    bool isStop  = (action_ch == BARRIER_CH_STOP);  // CH2
+    bool isOpen  = (action_ch == BARRIER_CH_OPEN);  // CH1
+    bool isClose = (action_ch == BARRIER_CH_CLOSE); // CH3
 
     if (!isStop && !isOpen && !isClose) return BARRIER_CMD_BUSY;
 
-    // ==========================================
-    // 1. LENH DUNG (STOP): Uu tien cao nhat
-    // ==========================================
-    if (isStop) {
-        BarrierResult res = BARRIER_CMD_OK;
-
-        // Reset kenh MO (CH1) va DONG (CH3) neu dang xung
+    // --- 1. LENH MO (CH1) ---
+    if (isOpen) {
         if (barrierState == BARRIER_OPENING) {
-            relayPulsing[BARRIER_CH_OPEN - 1] = false;
-            Relay_Off(BARRIER_CH_OPEN);
-            TcpPush_Broadcast("{\"event\":\"relay_preempted\",\"barrier\":1,\"channel\":1,\"preempted_by\":\"STOP\",\"timestamp_ms\":" + String(now) + "}");
-            Serial.println("[BARRIER] STOP ngat CH1 (MO)");
-            res = BARRIER_CMD_PREEMPTED;
-        } else if (barrierState == BARRIER_CLOSING) {
-            relayPulsing[BARRIER_CH_CLOSE - 1] = false;
-            Relay_Off(BARRIER_CH_CLOSE);
-            TcpPush_Broadcast("{\"event\":\"relay_preempted\",\"barrier\":1,\"channel\":3,\"preempted_by\":\"STOP\",\"timestamp_ms\":" + String(now) + "}");
-            Serial.println("[BARRIER] STOP ngat CH3 (DONG)");
-            res = BARRIER_CMD_PREEMPTED;
+            // Da dang MO -> Giu nguyen, khong tat
+            return BARRIER_CMD_OK;
         }
+        // Tat ngay lap tuc CH2 (DUNG) va CH3 (DONG) neu dang bat
+        Relay_Off(BARRIER_CH_STOP);
+        Relay_Off(BARRIER_CH_CLOSE);
 
-        // Bat kenh DUNG (CH2) va GIU MAI cho den khi co lenh MO/DONG
+        // Bat CH1 (MO) va GIU NGUYEN
+        barrierState = BARRIER_OPENING;
+        Relay_On(BARRIER_CH_OPEN);
+        TcpPush_Broadcast("{\"event\":\"barrier_cmd\",\"barrier\":1,\"channel\":1,\"action\":\"open\",\"mode\":\"hold\",\"timestamp_ms\":" + String(now) + "}");
+        TcpPush_Broadcast("{\"event\":\"barrier_state\",\"barrier\":1,\"state\":\"OPENING\",\"timestamp_ms\":" + String(now) + "}");
+        Serial.println("[BARRIER] CH1 (MO) -> ON (giu mai)");
+        return BARRIER_CMD_OK;
+    }
+
+    // --- 2. LENH DUNG (CH2) ---
+    if (isStop) {
+        if (barrierState == BARRIER_STOPPING) {
+            // Da dang DUNG -> Giu nguyen, khong tat
+            return BARRIER_CMD_OK;
+        }
+        // Tat ngay lap tuc CH1 (MO) va CH3 (DONG) neu dang bat
+        Relay_Off(BARRIER_CH_OPEN);
+        Relay_Off(BARRIER_CH_CLOSE);
+
+        // Bat CH2 (DUNG) va GIU NGUYEN
         barrierState = BARRIER_STOPPING;
         Relay_On(BARRIER_CH_STOP);
         TcpPush_Broadcast("{\"event\":\"barrier_cmd\",\"barrier\":1,\"channel\":2,\"action\":\"stop\",\"mode\":\"hold\",\"timestamp_ms\":" + String(now) + "}");
         TcpPush_Broadcast("{\"event\":\"barrier_state\",\"barrier\":1,\"state\":\"STOPPING\",\"timestamp_ms\":" + String(now) + "}");
-        Serial.println("[BARRIER] STOP -> STOPPING (giu mai)");
-        return res;
+        Serial.println("[BARRIER] CH2 (DUNG) -> ON (giu mai)");
+        return BARRIER_CMD_OK;
     }
 
-    // ==========================================
-    // 2. LENH MO (OPEN) HOAC DONG (CLOSE)
-    // ==========================================
-    // Neu dang trong 500ms xung (OPENING hoac CLOSING) -> Tu choi (busy)
-    if (barrierState == BARRIER_OPENING || barrierState == BARRIER_CLOSING) {
-        String act = isOpen ? "open" : "close";
-        TcpPush_Broadcast("{\"event\":\"barrier_rejected\",\"barrier\":1,\"action\":\"" + act
-                         + "\",\"reason\":\"busy\",\"current_state\":\"" + String(Relay_BarrierStateName())
-                         + "\",\"timestamp_ms\":" + String(now) + "}");
-        Serial.printf("[BARRIER] Tu choi %s: dang %s\n", act.c_str(), Relay_BarrierStateName());
-        return BARRIER_CMD_BUSY;
-    }
-
-    // Neu dang STOPPING (CH2 dang ON) -> Nhả CH2 (STOP) truoc
-    if (barrierState == BARRIER_STOPPING) {
+    // --- 3. LENH DONG (CH3) ---
+    if (isClose) {
+        if (barrierState == BARRIER_CLOSING) {
+            // Da dang DONG -> Giu nguyen, khong tat
+            return BARRIER_CMD_OK;
+        }
+        // Tat ngay lap tuc CH1 (MO) va CH2 (DUNG) neu dang bat
+        Relay_Off(BARRIER_CH_OPEN);
         Relay_Off(BARRIER_CH_STOP);
-        Serial.println("[BARRIER] Nha kenh DUNG (CH2) de thuc hien lenh moi");
-    }
 
-    // Phat xung 500ms cho CH1 (MO) hoac CH3 (DONG)
-    if (isOpen) {
-        barrierState = BARRIER_OPENING;
-        Relay_Pulse(BARRIER_CH_OPEN, duration_ms);
-        TcpPush_Broadcast("{\"event\":\"barrier_cmd\",\"barrier\":1,\"channel\":1,\"action\":\"open\",\"duration_ms\":"
-                         + String(duration_ms) + ",\"timestamp_ms\":" + String(now) + "}");
-        TcpPush_Broadcast("{\"event\":\"barrier_state\",\"barrier\":1,\"state\":\"OPENING\",\"timestamp_ms\":" + String(now) + "}");
-        Serial.printf("[BARRIER] MO -> OPENING (xung %dms)\n", duration_ms);
-    } else { // isClose
+        // Bat CH3 (DONG) va GIU NGUYEN
         barrierState = BARRIER_CLOSING;
-        Relay_Pulse(BARRIER_CH_CLOSE, duration_ms);
-        TcpPush_Broadcast("{\"event\":\"barrier_cmd\",\"barrier\":1,\"channel\":3,\"action\":\"close\",\"duration_ms\":"
-                         + String(duration_ms) + ",\"timestamp_ms\":" + String(now) + "}");
+        Relay_On(BARRIER_CH_CLOSE);
+        TcpPush_Broadcast("{\"event\":\"barrier_cmd\",\"barrier\":1,\"channel\":3,\"action\":\"close\",\"mode\":\"hold\",\"timestamp_ms\":" + String(now) + "}");
         TcpPush_Broadcast("{\"event\":\"barrier_state\",\"barrier\":1,\"state\":\"CLOSING\",\"timestamp_ms\":" + String(now) + "}");
-        Serial.printf("[BARRIER] DONG -> CLOSING (xung %dms)\n", duration_ms);
+        Serial.println("[BARRIER] CH3 (DONG) -> ON (giu mai)");
+        return BARRIER_CMD_OK;
     }
 
     return BARRIER_CMD_OK;

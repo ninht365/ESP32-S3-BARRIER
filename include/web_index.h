@@ -235,21 +235,18 @@ function addLog(msg, type='info', boxId='log-ctrl') {
 
 let isRequestInFlight = false;
 let networkLost = false;
-let lastCmdTime = 0;
-let fastPollTimer = null;
 
 function updateButtonStates(st) {
-  const isBusy = (st === 'OPENING' || st === 'CLOSING');
-  const inCooldown = (Date.now() - lastCmdTime < 1000);
   const lockAll = isRequestInFlight || networkLost;
 
   const btnOpen  = document.getElementById('btn-open');
   const btnStop  = document.getElementById('btn-stop');
   const btnClose = document.getElementById('btn-close');
 
-  if (btnOpen)  btnOpen.disabled  = lockAll || isBusy || inCooldown;
-  if (btnClose) btnClose.disabled = lockAll || isBusy || inCooldown;
-  if (btnStop)  btnStop.disabled  = lockAll;
+  // Khóa nút đang hoạt động (ví dụ: đang MỞ thì khóa nút MỞ, chỉ cho bấm DỪNG hoặc ĐÓNG)
+  if (btnOpen)  btnOpen.disabled  = lockAll || (st === 'OPENING');
+  if (btnStop)  btnStop.disabled  = lockAll || (st === 'STOPPING');
+  if (btnClose) btnClose.disabled = lockAll || (st === 'CLOSING');
 }
 
 function handleNetworkLoss(msg) {
@@ -302,15 +299,8 @@ async function updateStatus() {
     sb.innerText = st;
     sb.className = 'state-badge state-'+st;
 
-    // Cập nhật trạng thái khóa/mở nút dựa trên state hiện tại
+    // Cập nhật trạng thái nút
     updateButtonStates(st);
-
-    // Nếu đang OPENING hoặc CLOSING, kích hoạt fast poll 300ms để bắt thời điểm IDLE nhanh nhất
-    if (st === 'OPENING' || st === 'CLOSING') {
-      if (!fastPollTimer) {
-        fastPollTimer = setTimeout(() => { fastPollTimer = null; updateStatus(); }, 300);
-      }
-    }
 
     // TCP address for config tab
     if (d.ip) {
@@ -343,13 +333,10 @@ async function updateStatus() {
 
 // =================== BARRIER COMMANDS ===================
 async function barrierCmd(action) {
-  // 1. Chống Spam: Nếu mạng mất, đang gửi request, hoặc vừa bấm chưa tới 1 giây -> KHÔNG LÀM GÌ CẢ
-  if (networkLost || isRequestInFlight || (Date.now() - lastCmdTime < 1000)) return;
+  if (networkLost || isRequestInFlight) return;
 
-  // 2. Đặt mốc thời gian và KHÓA LẬP TỨC các nút
-  lastCmdTime = Date.now();
   isRequestInFlight = true;
-  updateButtonStates('OPENING'); // Khóa nút MỞ và ĐÓNG ngay lập tức
+  updateButtonStates('IDLE');
 
   addLog('Gửi lệnh: ' + action.toUpperCase() + '...', 'info');
   const controller = new AbortController();
@@ -367,13 +354,8 @@ async function barrierCmd(action) {
       throw new Error('HTTP ' + r.status);
     }
     const d = await r.json();
-    if (d.result === 'ok' || d.result === 'preempted') {
-      const msg = d.result === 'preempted'
-        ? 'DỪNG đã ngắt kênh trước thành công'
-        : 'Lệnh ' + action.toUpperCase() + ' được chấp nhận';
-      addLog(msg, 'ok');
-    } else if (d.result === 'busy') {
-      addLog('TỪ CHỐI: Barrier đang bận (' + d.current_state + ')', 'warn');
+    if (d.result === 'ok') {
+      addLog('Lệnh ' + action.toUpperCase() + ' thành công', 'ok');
     }
   } catch(e) {
     clearTimeout(timeoutId);
@@ -381,8 +363,6 @@ async function barrierCmd(action) {
   } finally {
     isRequestInFlight = false;
     updateStatus();
-    // Tự động mở lại nút sau khi hết thời gian Cooldown 1 giây
-    setTimeout(() => { updateStatus(); }, 1000);
   }
 }
 
