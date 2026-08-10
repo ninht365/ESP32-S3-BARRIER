@@ -1,13 +1,13 @@
 # BÁO CÁO TỔNG QUAN DỰ ÁN HỆ THỐNG ĐIỀU KHIỂN BARRIER TRUNG TÂM
-**Người thực hiện:** [Tên của bạn]
+**Người thực hiện:** [Trần Quang Anh, Trần Văn Ninh, Trần Quang Hiếu]
 **Nền tảng phần cứng:** ESP32-S3 PoE ETH (8DI - 8RO) & Board CAME ZL38
 
 ---
 
 ## I. GIỚI THIỆU DỰ ÁN
-Dự án nhằm mục đích thiết kế và xây dựng một **Hệ thống điều khiển Barrier thông minh (Dual-Barrier Control System)**. Hệ thống đóng vai trò làm cầu nối (Gateway) giữa phần mềm quản lý bãi xe trung tâm (hoặc Camera AI) và phần cứng cơ điện của cổng Barrier. 
+Dự án nhằm mục đích thiết kế và xây dựng một **Hệ thống điều khiển Barrier thông minh (Dual-Barrier Control System)**. Hệ thống đóng vai trò làm cầu nối giữa phần mềm quản lý bãi xe trung tâm và phần cứng cơ điện của cổng Barrier. 
 
-Hệ thống cho phép điều khiển tự động, theo dõi chính xác trạng thái vật lý của 2 làn Barrier độc lập theo thời gian thực (Real-time) với độ tin cậy và tính ổn định cao trong môi trường công nghiệp.
+Hệ thống cho phép điều khiển tự động, giám sát trạng thái vật lý của 2 làn Barrier độc lập theo thời gian thực với độ tin cậy và tính ổn định cao trong môi trường công nghiệp.
 
 ---
 
@@ -45,9 +45,9 @@ Hệ thống sử dụng bo mạch lõi **Waveshare ESP32-S3 PoE ETH (8 Kênh Đ
 ---
 
 ## III. KIẾN TRÚC PHẦN MỀM (SOFTWARE ARCHITECTURE)
-Phần mềm Firmware được lập trình bằng C/C++ trên nền tảng ESP32 Arduino Core, áp dụng kiến trúc đa luồng phi đồng bộ (Non-blocking) để đảm bảo không bỏ sót bất kỳ tín hiệu nào. 
+Phần mềm Firmware được lập trình bằng C/C++ trên nền tảng ESP32 Arduino Core, áp dụng kiến trúc Non-blocking để xử lý song song các tác vụ mà không làm gián đoạn lẫn nhau, đảm bảo không bỏ sót bất kỳ tín hiệu nào. 
 
-### 1. Cỗ máy trạng thái (State Machine)
+### 1. Máy trạng thái
 Mỗi Barrier sở hữu một State Machine riêng biệt nhằm phân tích tín hiệu điện (0/1) từ chân DI và quy đổi ra trạng thái cổng vật lý (Physical State):
 - `OPEN` (Mở hoàn toàn): Xảy ra khi chân Fully-Open (DI2/DI4) kích hoạt.
 - `OPENING` / `CLOSING` (Đang nâng hạ): Xảy ra khi chân Moving (DI1/DI3) có tín hiệu nhấp nháy chuyển mức (Toggle) liên tục trong khoảng thời gian dưới 2 giây.
@@ -77,7 +77,7 @@ Hệ thống sử dụng mạng LAN (Cổng RJ45 kết nối qua chip W5500) đ�
 
 ### 3. Giao diện quản lý nội bộ (Web UI)
 Được tích hợp thẳng vào bộ nhớ ROM của vi điều khiển, người dùng chỉ cần gõ IP của thiết bị vào trình duyệt để truy cập:
-- Thiết kế Dark Mode hiện đại, phản hồi tức thời (Responsive) trên PC và Mobile.
+- Phản hồi tức thời trên máy tính.
 - Cho phép giám sát trạng thái trực tiếp của 2 Barrier.
 - Tích hợp tính năng an toàn (Interlock): Tự động làm mờ (Disable) nút MỞ khi cổng đang mở, khóa mọi thao tác khi đứt cáp mạng.
 - Tích hợp công cụ chẩn đoán phần cứng (Hardware Diagnostic): Quét địa chỉ I2C, Test từng kênh Relay đơn lẻ, Cấu hình lại IP tĩnh hệ thống.
