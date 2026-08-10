@@ -6,7 +6,6 @@ static IPAddress storedGW(192, 168, 1, 1);
 static IPAddress storedSN(255, 255, 255, 0);
 
 void Config_Init() {
-    // Dat lai NVS ve 192.168.1.200 theo yeu cau
     prefs.begin("netcfg", false); // read-write
     prefs.clear(); // Xoa cac IP cu trong NVS
     prefs.putString("ip", "192.168.1.200");
