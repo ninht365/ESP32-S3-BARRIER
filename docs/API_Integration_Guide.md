@@ -31,15 +31,11 @@ Hệ thống điều khiển Barrier trung tâm sử dụng board ESP32-S3-ETH-8
 - **Cổng Web UI:** `80` (Truy cập: `http://192.168.1.200`)
 - **Cổng TCP Push:** `8080`
 
----
-
 ### 2.2. Giải thích cơ chế Địa chỉ IP trong Mạng LAN
 Để Máy tính và ESP32 có thể giao tiếp được với nhau qua cáp LAN:
 - **Địa chỉ IP Máy tính (VD: `192.168.1.100`):** Địa chỉ duy nhất của card mạng máy tính.
 - **Địa chỉ IP ESP32 (`192.168.1.200`):** Địa chỉ duy nhất của bo mạch điều khiển.
 - **Quy tắc kết nối:** Hai thiết bị phải có địa chỉ **CÙNG DẢI MẠNG** (cùng 3 số đầu `192.168.1.x`) nhưng **KHÁC SỐ CUỐI** để tránh trùng lặp IP.
-
----
 
 ### 2.3. Hướng dẫn Đặt IP Tĩnh cho Máy tính trên Windows (10 / 11)
 
@@ -108,8 +104,6 @@ Tab chuyên dụng cho thao tác vận hành hàng ngày:
   - **Cảnh báo đứt mạng:** Nếu dây mạng bị rút hoặc đứt kết nối, một Banner đỏ rực sẽ hiện lên: `⚠️ MẤT KẾT NỐI MẠNG — ĐÃ KHÓA TOÀN BỘ THAO TÁC`, đảm bảo an toàn tuyệt đối.
 - **Khung Nhật ký (Log Box):** Hiển thị chi tiết 40 sự kiện gần nhất (Thời gian, tên lệnh, phản hồi thành công/thất bại).
 
----
-
 ### 3.2. Tab 2: 🔧 Kiểm tra Phần cứng (Hardware Test)
 
 Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đường truyền I2C:
@@ -126,8 +120,6 @@ Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đườ
    - **BẬT (ON):** Bật cố định rơ-le.
    - **TẮT (OFF):** Tắt rơ-le.
    - Đèn LED màu xanh chỉ thị trạng thái thực tế của từng rơ-le theo thời gian thực.
-
----
 
 ### 3.3. Tab 3: ⚙️ Cấu hình Mạng & Hệ thống (Network Config)
 
@@ -199,8 +191,6 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 }
 ```
 
----
-
 ### 4.2. Kiểm tra Trạng thái Toàn hệ thống
 *   **Endpoint:** `GET /api/status`
 
@@ -223,8 +213,6 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 }
 ```
 
----
-
 ### 4.3. Điều khiển Kênh Relay Thô (Raw Relay Control)
 *   **Endpoint:** `GET /api/relay`
 *   **Tham số:** `ch` (`1`–`8` hoặc `all`), `action` (`pulse` | `on` | `off`), `duration` (ms).
@@ -232,7 +220,6 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 **Ví dụ Bật Relay 3:**  
 `GET http://192.168.1.200/api/relay?ch=3&action=on`
 
----
 
 ### 4.4. Đổi IP qua API
 *   **Endpoint:** `GET /api/config/setip?ip=192.168.1.150&gw=192.168.1.1&sn=255.255.255.0`
