@@ -16,7 +16,6 @@ void Config_Init() {
     storedIP = IPAddress(192, 168, 1, 200);
     storedGW = IPAddress(192, 168, 1, 1);
     storedSN = IPAddress(255, 255, 255, 0);
-    Serial.println("[CONFIG] Da reset IP ve mac dinh: 192.168.1.200");
 }
 
 IPAddress Config_GetIP()      { return storedIP; }
