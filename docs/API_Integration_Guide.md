@@ -1,38 +1,24 @@
-# 📘 TÀI LIỆU BÀN GIAO VÀ HƯỚNG DẪN SỬ DỤNG HỆ THỐNG ĐIỀU KHIỂN BARRIER (ESP32-S3)
-
-> **Phiên bản:** 2.0.0 (Cập nhật Hướng dẫn Bàn giao, Giao diện Web 3 Tab, REST API & TCP Push Server)  
-> **Nền tảng:** Vi điều khiển ESP32-S3 + Ethernet W5500 + TCA9554 8-Relay Outputs + 8-Digital Inputs  
+# TÀI LIỆU BÀN GIAO VÀ HƯỚNG DẪN SỬ DỤNG HỆ THỐNG ĐIỀU KHIỂN BARRIER (ESP32-S3)
+ 
+> **Nền tảng:**  Board ESP32-S3-ETH-8DI-8RO (Vi điều khiển ESP32-S3 + Ethernet W5500 + TCA9554 8-Relay Outputs + 8-Digital Inputs)
 > **Đối tượng sử dụng:** Kỹ thuật viên vận hành, Quản trị viên bãi xe và Nhà phát triển phần mềm tích hợp (Camera AI, Phần mềm bãi xe).
 
 ---
 
 ## 1. TỔNG QUAN HỆ THỐNG
 
-Hệ thống điều khiển Barrier trung tâm sử dụng vi điều khiển **ESP32-S3** kết hợp module **Ethernet W5500** tốc độ cao, quản lý **8 kênh Relay ngõ ra (RO1–RO8)** qua chip mở rộng I2C **TCA9554PWR** và **8 ngõ vào số (DI1–DI8)** có cách ly quang.
-
+Hệ thống điều khiển Barrier trung tâm sử dụng board ESP32-S3-ETH-8DI-8RO.
 ```
-┌─────────────────┐     Cáp LAN Ethernet     ┌────────────────────────────────────────────────────────┐
-│ PC / Laptop     │◄────────────────────────►│                 ESP32-S3 Board                         │
-│ (192.168.1.100) │                          │  Web Server (Port 80)  |  TCP Push Server (Port 8080)   │
-└─────────────────┘                          └───────────────────────────┬────────────────────────────┘
-                                                                         │ I2C (SDA:42, SCL:41)
-                                                               ┌─────────▼──────────┐
-                                                               │   TCA9554PWR 0x20  │
-                                                               │ ── BARRIER #1 ───  │
-                                                               │ CH1: MỞ (OPEN)     │
-                                                               │ CH2: DỪNG (STOP)   │
-                                                               │ CH3: ĐÓNG (CLOSE)  │
-                                                               │ ── BARRIER #2 ───  │
-                                                               │ CH4: MỞ (OPEN)     │
-                                                               │ CH5: DỪNG (STOP)   │
-                                                               │ CH6: ĐÓNG (CLOSE)  │
-                                                               └────────────────────┘
+┌─────────────────┐     Cáp LAN Ethernet     ┌──────────────────────────────────────────────────────┐
+│ PC / Laptop     │◄────────────────────────►│                 ESP32-S3 Board                       │
+│ (192.168.1.100) │                          │  Web Server (Port 80)  |  TCP Push Server (Port 8080)│
+└─────────────────┘                          └──────────────────────────────────────────────────────┘
 ```
 
 ### Phương thức tương tác chính:
 1. **Giao diện Web UI 3 Tab (Port 80):** Giúp kỹ thuật viên/người vận hành điều khiển, kiểm tra phần cứng và cấu hình thiết bị trực tiếp trên trình duyệt Web (Chrome, Edge, Firefox) từ PC hoặc điện thoại.
 2. **HTTP RESTful API (Port 80):** Cung cấp các Endpoint chuẩn JSON cho phần mềm bãi xe (C#, Python, Java) chủ động phát lệnh điều khiển và truy vấn trạng thái.
-3. **TCP Socket Push Server (Port 8080):** Duy trì kết nối realtime 24/7, tự động "đẩy" (Push) các sự kiện thay đổi trạng thái barrier/relay về phần mềm trung tâm lập tức mà không cần tốn tài nguyên gọi API liên tục.
+3. **TCP Socket Push Server (Port 8080):** Duy trì kết nối realtime 24/7, tự động đẩy (Push) các sự kiện thay đổi trạng thái barrier/relay về phần mềm trung tâm lập tức mà không cần tốn tài nguyên gọi API liên tục.
 
 ---
 
