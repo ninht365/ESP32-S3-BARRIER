@@ -14,6 +14,13 @@ Hệ thống cho phép điều khiển tự động, theo dõi chính xác trạ
 ## II. KIẾN TRÚC PHẦN CỨNG (HARDWARE ARCHITECTURE)
 Hệ thống sử dụng bo mạch lõi **Waveshare ESP32-S3 PoE ETH (8 Kênh Đầu Vào Số - 8 Kênh Rơ-le)** để kết nối với bo mạch **CAME ZL38** của Barrier. Cấu hình phần cứng được chia làm 2 làn độc lập:
 
+<div align="center">
+  <img src="image.png" width="45%" style="margin-right: 2%">
+  <img src="image-1.png" width="45%">
+  <br>
+  <i>Hình 1 & 2: Board Waveshare ESP32-S3-ETH-8DI-8RO (trái) và Mạch Barrier CAME ZL38 (phải)</i>
+</div>
+
 ### 1. Barrier 1
 - **Điều khiển (Relay Output - RO):** 
   - `CH1`: Điều khiển lệnh MỞ (Nối vào chân `2-3` của ZL38).
@@ -22,6 +29,12 @@ Hệ thống sử dụng bo mạch lõi **Waveshare ESP32-S3 PoE ETH (8 Kênh Đ
 - **Phản hồi (Digital Input - DI):**
   - `DI2`: Giám sát trạng thái **Đã mở hoàn toàn** (Nối vào chân `5` của ZL38).
   - `DI1`: Giám sát trạng thái **Đang nâng/hạ** hoặc **Đã đóng hoàn toàn** (Nối vào chân `E` của ZL38).
+
+<div align="center">
+  <img src="image-2.png" width="70%">
+  <br>
+  <i>Hình 3: Sơ đồ kết nối tín hiệu Điều khiển và Phản hồi dành cho 1 Barrier</i>
+</div>
 
 ### 2. Barrier 2
 - **Điều khiển (Relay Output - RO):** `CH4` (Mở), `CH5` (Đóng), `CH6` (Dừng).
@@ -40,6 +53,22 @@ Mỗi Barrier sở hữu một State Machine riêng biệt nhằm phân tích t�
 - `OPENING` / `CLOSING` (Đang nâng hạ): Xảy ra khi chân Moving (DI1/DI3) có tín hiệu nhấp nháy chuyển mức (Toggle) liên tục trong khoảng thời gian dưới 2 giây.
 - `CLOSED` (Đóng hoàn toàn): Khi tín hiệu ngừng nhấp nháy quá 2 giây và duy trì ở mức điện áp CAO.
 - `STOPPED` (Dừng lửng/Kẹt): Khi tín hiệu ngừng nhấp nháy quá 2 giây và rớt về mức điện áp THẤP.
+
+```mermaid
+stateDiagram-v2
+    [*] --> STOPPED : Khởi động / Thả nổi
+    STOPPED --> OPENING : Lệnh MỞ
+    STOPPED --> CLOSING : Lệnh ĐÓNG
+    
+    OPENING --> OPEN : DI2 kích hoạt (1)
+    CLOSING --> CLOSED : DI1 ngừng chớp (2s) và = 1
+    
+    OPENING --> STOPPED : Bấm nút DỪNG / Mất tín hiệu
+    CLOSING --> STOPPED : Bấm nút DỪNG / Gặp vật cản
+    OPEN --> CLOSING : Lệnh ĐÓNG
+    CLOSED --> OPENING : Lệnh MỞ
+```
+<div align="center"><i>Sơ đồ 1: Luồng chuyển đổi trạng thái (State Machine) của Barrier</i></div>
 
 ### 2. Giao thức Mạng (Network & API)
 Hệ thống sử dụng mạng LAN (Cổng RJ45 kết nối qua chip W5500) đảm bảo tính ổn định tối đa 24/7.
