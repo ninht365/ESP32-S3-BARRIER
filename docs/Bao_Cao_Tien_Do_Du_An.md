@@ -60,12 +60,12 @@ graph TD
     classDef moving fill:#3b82f6,color:#fff,stroke:#2563eb,stroke-width:2px;
     classDef stopped fill:#f59e0b,color:#fff,stroke:#d97706,stroke-width:2px;
 
-    STOP[DỪNG LỬNG]:::stopped
-    OPEN[ĐÃ MỞ HOÀN TOÀN]:::stable
-    CLOSE[ĐÃ ĐÓNG HOÀN TOÀN]:::stable
+    STOP[STOP]:::stopped
+    OPEN[OPEN]:::stable
+    CLOSED[CLOSED]:::stable
     
-    OPENING(ĐANG NÂNG LÊN):::moving
-    CLOSING(ĐANG HẠ XUỐNG):::moving
+    OPENING[OPENING]:::moving
+    CLOSING[CLOSING]:::moving
 
     STOP -->|Nhận lệnh MỞ| OPENING
     STOP -->|Nhận lệnh ĐÓNG| CLOSING
