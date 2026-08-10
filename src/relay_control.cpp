@@ -133,7 +133,7 @@ void Relay_Loop() {
         }
     }
 
-    // 2. Đọc trạng thái DI cho 2 Barrier
+    // 2. Đọc trạng thái DI cho 2 Barrier (Chỉ cập nhật nếu có tín hiệu phần cứng DI kích hoạt)
     for (int i = 0; i < 2; i++) {
         bool fullyOpen = digitalRead(barriers[i].diFullyOpenPin);
         bool movingClosed = digitalRead(barriers[i].diMovingClosedPin);
@@ -148,27 +148,23 @@ void Relay_Loop() {
 
         if (fullyOpen) {
             newState = BARRIER_OPEN;
-        } else if (timeSinceToggle < 2000) {
+        } else if (movingClosed && timeSinceToggle < 2000) {
             // Đang nhấp nháy -> Đang nâng hoặc đang hạ
             if (currentRelayState & (1 << (barriers[i].relayCloseCh - 1))) {
                 newState = BARRIER_CLOSING;
             } else {
                 newState = BARRIER_OPENING; 
             }
-        } else {
-            // Đã đứng yên quá 2 giây
-            if (movingClosed == 1) {
-                newState = BARRIER_CLOSED;
-            } else {
-                newState = BARRIER_STOPPED;
-            }
+        } else if (movingClosed && timeSinceToggle >= 2000) {
+            // Đã đứng yên ở mức HIGH quá 2s -> Đã đóng hoàn toàn
+            newState = BARRIER_CLOSED;
         }
 
         if (newState != barriers[i].state && newState != BARRIER_UNKNOWN) {
             barriers[i].state = newState;
             String evt = "{\"event\":\"barrier_state\",\"barrier\":" + String(i + 1) + ",\"state\":\"" + Relay_BarrierStateName(newState) + "\",\"timestamp_ms\":" + String(now) + "}";
             TcpPush_Broadcast(evt);
-            Serial.printf("[BARRIER %d] State changed to %s\n", i + 1, Relay_BarrierStateName(newState));
+            Serial.printf("[BARRIER %d] State changed via DI to %s\n", i + 1, Relay_BarrierStateName(newState));
         }
     }
 }
@@ -203,12 +199,15 @@ BarrierResult Relay_BarrierCmd(uint8_t barrier_id, BarrierAction action, uint16_
     if (action == ACTION_OPEN) {
         ch = barriers[idx].relayOpenCh;
         actionName = "open";
+        barriers[idx].state = BARRIER_OPENING;
     } else if (action == ACTION_CLOSE) {
         ch = barriers[idx].relayCloseCh;
         actionName = "close";
+        barriers[idx].state = BARRIER_CLOSING;
     } else if (action == ACTION_STOP) {
         ch = barriers[idx].relayStopCh;
         actionName = "stop";
+        barriers[idx].state = BARRIER_STOPPED;
     }
 
     if (ch == 0) return BARRIER_CMD_ERR_ID;
@@ -216,13 +215,20 @@ BarrierResult Relay_BarrierCmd(uint8_t barrier_id, BarrierAction action, uint16_
     // Pulse lệnh điều khiển nút bấm
     Relay_Pulse(ch, duration_ms);
 
-    String evt = "{\"event\":\"barrier_cmd\",\"barrier\":" + String(barrier_id) 
-               + ",\"channel\":" + String(ch) 
-               + ",\"action\":\"" + String(actionName) 
-               + "\",\"duration_ms\":" + String(duration_ms) 
-               + ",\"timestamp_ms\":" + String(millis()) + "}";
-    TcpPush_Broadcast(evt);
-    Serial.printf("[BARRIER %d] Nhan lenh %s (CH%d xung %dms)\n", barrier_id, actionName, ch, duration_ms);
+    String evtCmd = "{\"event\":\"barrier_cmd\",\"barrier\":" + String(barrier_id) 
+                  + ",\"channel\":" + String(ch) 
+                  + ",\"action\":\"" + String(actionName) 
+                  + "\",\"duration_ms\":" + String(duration_ms) 
+                  + ",\"timestamp_ms\":" + String(millis()) + "}";
+    TcpPush_Broadcast(evtCmd);
+
+    String evtSt = "{\"event\":\"barrier_state\",\"barrier\":" + String(barrier_id)
+                 + ",\"state\":\"" + Relay_BarrierStateName(barriers[idx].state)
+                 + "\",\"timestamp_ms\":" + String(millis()) + "}";
+    TcpPush_Broadcast(evtSt);
+
+    Serial.printf("[BARRIER %d] Nhan lenh %s (CH%d xung %dms) -> State: %s\n", 
+                  barrier_id, actionName, ch, duration_ms, Relay_BarrierStateName(barriers[idx].state));
 
     return BARRIER_CMD_OK;
 }

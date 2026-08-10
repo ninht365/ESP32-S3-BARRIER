@@ -57,54 +57,55 @@ Hệ thống điều khiển Barrier trung tâm sử dụng vi điều khiển *
 
 ### 2.3. Hướng dẫn Đặt IP Tĩnh cho Máy tính trên Windows (10 / 11)
 
-Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router có DHCP), bạn cần cài IP tĩnh cho máy tính theo các bước:
+Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router có DHCP), bạn cần cài IP tĩnh cho máy tính theo các bước chi tiết sau:
 
-1. Nhấn tổ hợp phím **`Win + R`** ➔ Nhập **`ncpa.cpl`** ➔ Nhấn **Enter** (Mở cửa sổ Network Connections).
-2. Chuột phải vào card mạng **Ethernet** ➔ Chọn **Properties**.
-3. Cửa sổ mở ra, chọn **Internet Protocol Version 4 (TCP/IPv4)** ➔ Nhấn nút **Properties**.
-4. Tích chọn **Use the following IP address** và nhập các thông số:
-   - **IP address:** `192.168.1.100` *(hoặc số bất kỳ từ 2 đến 254, trừ 200)*
-   - **Subnet mask:** `255.255.255.0`
-   - **Default gateway:** *(Có thể để trống hoặc nhập `192.168.1.1`)*
-5. Nhấn **OK** ➔ Nhấn **Close** để lưu cấu hình.
+**Bước 1:** Nhấn tổ hợp phím **`Win + R`** ➔ Nhập **`ncpa.cpl`** ➔ Nhấn **Enter** để mở cửa sổ *Network Connections*.
+<p align="center">
+  <img src="image-4.png" alt="Mở lệnh ncpa.cpl">
+</p>
 
-```
-┌───────────────────────────────────────────────────────────┐
-│ Internet Protocol Version 4 (TCP/IPv4) Properties         │
-├───────────────────────────────────────────────────────────┤
-│ (•) Use the following IP address:                         │
-│     IP address:       192 . 168 .   1 . 100               │
-│     Subnet mask:      255 . 255 . 255 .   0               │
-│     Default gateway:  192 . 168 .   1 .   1               │
-└───────────────────────────────────────────────────────────┘
-```
+**Bước 2:** Chuột phải vào biểu tượng card mạng **Ethernet** ➔ Chọn **Properties**.
+<p align="center">
+  <img src="image-5.png" alt="Chọn Ethernet Properties">
+</p>
 
-6. Kiểm tra thông mạng bằng **Command Prompt (CMD)**:
-   - Mở CMD ➔ Gõ lệnh: `ping 192.168.1.200`
-   - Nếu màn hình hiện `Reply from 192.168.1.200: bytes=32 time<1ms` ➔ **Đã kết nối thành công!**
+**Bước 3:** Cửa sổ mở ra, chọn **Internet Protocol Version 4 (TCP/IPv4)** ➔ Nhấn nút **Properties**.
+<p align="center">
+  <img src="image-6.png" alt="Chọn TCP/IPv4 Properties">
+</p>
 
-7. Mở trình duyệt Web (Chrome/Edge) ➔ Gõ địa chỉ: **`http://192.168.1.200`** để vào giao diện điều khiển.
+**Bước 4:** Tích chọn **Use the following IP address** và nhập các thông số:
+- **IP address:** `192.168.1.100` *(hoặc số bất kỳ từ 2 đến 254, ngoại trừ 200)*
+- **Subnet mask:** `255.255.255.0`
+- **Default gateway:** `192.168.1.1` *(hoặc để trống)*
+<p align="center">
+  <img src="image-7.png" alt="Cấu hình IP tĩnh">
+</p>
+
+**Bước 5:** Nhấn **OK** ➔ Nhấn **Close** để lưu cấu hình.
+
+**Bước 6:** Kiểm tra kết nối mạng bằng **Command Prompt (CMD)**:
+- Mở CMD ➔ Gõ lệnh: `ping 192.168.1.200`
+- Nếu màn hình trả về `Reply from 192.168.1.200: bytes=32 time<1ms` ➔ **Đã kết nối thành công!**
+<p align="center">
+  <img src="image-8.png" alt="Kiểm tra ping thành công">
+</p>
+
+**Bước 7:** Mở trình duyệt Web (Chrome/Edge/Firefox) ➔ Gõ địa chỉ: **`http://192.168.1.200`** để truy cập giao diện điều khiển.
 
 ---
 
 ## 3. HƯỚNG DẪN SỬ DỤNG GIAO DIỆN WEB UI (3 TAB)
 
-Giao diện Web được thiết kế tối ưu, bao gồm thanh thông tin hệ thống (Status Bar) và 3 Tab chức năng:
-
-```
-┌───────────────────────────────────────────────────────────┐
-│ ⚡ BARRIER CONTROL SYSTEM                                 │
-│ IP: 192.168.1.200 | Uptime: 120s | [ETH OK] | 1 TCP client│
-├───────────────┬─────────────────────────┬─────────────────┤
-│ 🚧 Barrier    │ 🔧 Kiểm tra HW          │ ⚙️ Cấu hình     │
-└───────────────┴─────────────────────────┴─────────────────┘
-```
-
----
 
 ### 3.1. Tab 1: 🚧 Điều khiển Barrier (Barrier Control)
 
 Tab chuyên dụng cho thao tác vận hành hàng ngày:
+
+<p align="center">
+  <img src="image-1.png" alt="Tab điều khiển chính"><br>
+  <em>Hình 1: Tab điều khiển chính.</em>
+</p>
 
 - **Bảng thông tin Barrier 1 & Barrier 2:**
   - **Nhãn trạng thái (State Badge):** Hiển thị trạng thái tức thì theo màu sắc:
@@ -127,6 +128,11 @@ Tab chuyên dụng cho thao tác vận hành hàng ngày:
 
 Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đường truyền I2C:
 
+<p align="center">
+  <img src="image-2.png" alt="Tab kiểm tra phần cứng"><br>
+  <em>Hình 2: Tab kiểm tra phần cứng.</em>
+</p>
+
 1. **Chẩn đoán I2C Bus (`▶ Bắt đầu quét`):**
    - Tự động quét và phát hiện chip mở rộng I/O **TCA9554** tại địa chỉ `0x20` (hoặc các chân SDA/SCL trên bo mạch).
 2. **Kiểm tra 8 Kênh Relay độc lập (CH1 ➔ CH8):**
@@ -140,6 +146,11 @@ Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đườ
 ### 3.3. Tab 3: ⚙️ Cấu hình Mạng & Hệ thống (Network Config)
 
 Tab cho phép thay đổi thông số mạng tĩnh và lưu cố định vào bộ nhớ NVS (không bị mất khi tắt điện):
+
+<p align="center">
+  <img src="image-3.png" alt="Tab cấu hình địa chỉ IP"><br>
+  <em>Hình 3: Tab cấu hình địa chỉ IP.</em>
+</p>
 
 1. **Thay đổi Địa chỉ IP tĩnh:**
    - **Địa chỉ IP (ESP32):** Nhập IP mới (Ví dụ: `192.168.1.150` hoặc `10.0.0.200`).
