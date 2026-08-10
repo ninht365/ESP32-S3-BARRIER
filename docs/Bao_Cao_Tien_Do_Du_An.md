@@ -55,32 +55,43 @@ Mỗi Barrier sở hữu một State Machine riêng biệt nhằm phân tích t�
 - `STOPPED` (Dừng lửng/Kẹt): Khi tín hiệu ngừng nhấp nháy quá 2 giây và rớt về mức điện áp THẤP.
 
 ```mermaid
-stateDiagram-v2
-    [*] --> STOPPED : Khởi động / Thả nổi
-    STOPPED --> OPENING : Lệnh MỞ
-    STOPPED --> CLOSING : Lệnh ĐÓNG
+graph TD
+    classDef stable fill:#10b981,color:#fff,stroke:#059669,stroke-width:2px;
+    classDef moving fill:#3b82f6,color:#fff,stroke:#2563eb,stroke-width:2px;
+    classDef stopped fill:#f59e0b,color:#fff,stroke:#d97706,stroke-width:2px;
+
+    STOP[DỪNG LỬNG]:::stopped
+    OPEN[ĐÃ MỞ HOÀN TOÀN]:::stable
+    CLOSE[ĐÃ ĐÓNG HOÀN TOÀN]:::stable
     
-    OPENING --> OPEN : DI2 kích hoạt (1)
-    CLOSING --> CLOSED : DI1 ngừng chớp (2s) và = 1
+    OPENING(ĐANG NÂNG LÊN):::moving
+    CLOSING(ĐANG HẠ XUỐNG):::moving
+
+    STOP -->|Nhận lệnh MỞ| OPENING
+    STOP -->|Nhận lệnh ĐÓNG| CLOSING
     
-    OPENING --> STOPPED : Bấm nút DỪNG / Mất tín hiệu
-    CLOSING --> STOPPED : Bấm nút DỪNG / Gặp vật cản
-    OPEN --> CLOSING : Lệnh ĐÓNG
-    CLOSED --> OPENING : Lệnh MỞ
+    OPENING -->|Chạm hành trình Mở| OPEN
+    CLOSING -->|Chạm hành trình Đóng| CLOSE
+    
+    OPEN -->|Nhận lệnh ĐÓNG| CLOSING
+    CLOSE -->|Nhận lệnh MỞ| OPENING
+    
+    OPENING -.->|Nhấn Dừng / Vật cản| STOP
+    CLOSING -.->|Nhấn Dừng / Vật cản| STOP
 ```
 <div align="center"><i>Sơ đồ 1: Luồng chuyển đổi trạng thái (State Machine) của Barrier</i></div>
 
 ### 2. Giao thức Mạng (Network & API)
-Hệ thống sử dụng mạng LAN (Cổng RJ45 kết nối qua chip W5500) đảm bảo tính ổn định tối đa 24/7.
+Hệ thống sử dụng mạng LAN (Cổng RJ45 kết nối qua chip W5500) đảm bảo tính ổn định.
 - **RESTful API (Port 80):** Cung cấp các Endpoint chuẩn hóa (`/api/barrier?id=X&action=Y`) để phần mềm cấp trên có thể gọi lệnh (Open/Close/Stop) bằng JSON.
-- **TCP Push Server (Port 8080):** Kênh giao tiếp thời gian thực (Real-time). Bất cứ khi nào Barrier có chuyển động hoặc nhận lệnh, thiết bị sẽ tự động xuất (Push) bản tin sự kiện (`barrier_state`, `barrier_cmd`) lên mọi phần mềm đang kết nối mà không cần phần mềm phải gọi lệnh hỏi liên tục (Polling).
+- **TCP Push Server (Port 8080):** Kênh giao tiếp thời gian thực. Bất cứ khi nào Barrier có chuyển động hoặc nhận lệnh, thiết bị sẽ tự động xuất bản tin sự kiện (`barrier_state`, `barrier_cmd`) lên phần mềm đang kết nối.
 
 ### 3. Giao diện quản lý nội bộ (Web UI)
 Được tích hợp thẳng vào bộ nhớ ROM của vi điều khiển, người dùng chỉ cần gõ IP của thiết bị vào trình duyệt để truy cập:
 - Phản hồi tức thời trên máy tính.
 - Cho phép giám sát trạng thái trực tiếp của 2 Barrier.
-- Tích hợp tính năng an toàn (Interlock): Tự động làm mờ (Disable) nút MỞ khi cổng đang mở, khóa mọi thao tác khi đứt cáp mạng.
-- Tích hợp công cụ chẩn đoán phần cứng (Hardware Diagnostic): Quét địa chỉ I2C, Test từng kênh Relay đơn lẻ, Cấu hình lại IP tĩnh hệ thống.
+- Tích hợp tính năng an toàn: Tự động vô hiệu hóa nút MỞ khi cổng đang mở, khóa mọi thao tác khi mất mạng.
+- Tích hợp công cụ chẩn đoán phần cứng: Quét địa chỉ I2C, Test từng kênh Relay đơn lẻ, Cấu hình lại IP tĩnh hệ thống.
 
 ---
 
