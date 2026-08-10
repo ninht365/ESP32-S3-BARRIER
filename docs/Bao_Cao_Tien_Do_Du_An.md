@@ -62,22 +62,22 @@ graph TD
 
     STOP[STOP]:::stopped
     OPEN[OPEN]:::stable
-    CLOSED[CLOSED]:::stable
+    CLOSE[CLOSE]:::stable
     
     OPENING[OPENING]:::moving
     CLOSING[CLOSING]:::moving
 
-    STOP -->|Command OPEN| OPENING
-    STOP -->|Command CLOSE| CLOSING
+    STOP -->|Nhận lệnh MỞ| OPENING
+    STOP -->|Nhận lệnh ĐÓNG| CLOSING
     
-    OPENING -->|Reach OPEN Limit| OPEN
-    CLOSING -->|Reach CLOSE Limit| CLOSED
+    OPENING -->|Chạm hành trình Mở| OPEN
+    CLOSING -->|Chạm hành trình Đóng| CLOSE
     
-    OPEN -->|Command CLOSE| CLOSING
-    CLOSED -->|Command OPEN| OPENING
+    OPEN -->|Nhận lệnh ĐÓNG| CLOSING
+    CLOSE -->|Nhận lệnh MỞ| OPENING
     
-    OPENING -.->|Command STOP / Obstacle| STOP
-    CLOSING -.->|Command STOP / Obstacle| STOP
+    OPENING -.->|Nhấn Dừng / Vật cản| STOP
+    CLOSING -.->|Nhấn Dừng / Vật cản| STOP
 ```
 <div align="center"><i>Sơ đồ 1: Luồng chuyển đổi trạng thái (State Machine) của Barrier</i></div>
 
