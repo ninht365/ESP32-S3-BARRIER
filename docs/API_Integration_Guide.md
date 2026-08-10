@@ -1,144 +1,280 @@
-# TÀI LIỆU TÍCH HỢP HỆ THỐNG ĐIỀU KHIỂN BARRIER (ESP32-S3)
+# 📘 TÀI LIỆU BÀN GIAO VÀ HƯỚNG DẪN SỬ DỤNG HỆ THỐNG ĐIỀU KHIỂN BARRIER (ESP32-S3)
 
-**Phiên bản:** 1.0.0
-**Mô tả:** Tài liệu hướng dẫn giao thức giao tiếp và tích hợp API cho bộ điều khiển Barrier trung tâm (ESP32-S3). Tài liệu này dành cho các nhà phát triển phần mềm, kỹ thuật viên tích hợp hệ thống (Camera AI, phần mềm bãi xe).
+> **Phiên bản:** 2.0.0 (Cập nhật Hướng dẫn Bàn giao, Giao diện Web 3 Tab, REST API & TCP Push Server)  
+> **Nền tảng:** Vi điều khiển ESP32-S3 + Ethernet W5500 + TCA9554 8-Relay Outputs + 8-Digital Inputs  
+> **Đối tượng sử dụng:** Kỹ thuật viên vận hành, Quản trị viên bãi xe và Nhà phát triển phần mềm tích hợp (Camera AI, Phần mềm bãi xe).
 
 ---
 
 ## 1. TỔNG QUAN HỆ THỐNG
 
-Bộ điều khiển cung cấp 2 phương thức giao tiếp chính qua chuẩn mạng Ethernet TCP/IP:
-1.  **HTTP RESTful API (Port 80):** Dùng để phần mềm trung tâm (Client) chủ động gọi lệnh điều khiển (Open/Close/Stop) và hỏi trạng thái.
-2.  **TCP Socket Push Server (Port 8080):** Kênh duy trì kết nối theo thời gian thực. Thiết bị sẽ chủ động "đẩy" (Push) các sự kiện về phần mềm trung tâm (như có người tác động bằng tay, sự cố).
+Hệ thống điều khiển Barrier trung tâm sử dụng vi điều khiển **ESP32-S3** kết hợp module **Ethernet W5500** tốc độ cao, quản lý **8 kênh Relay ngõ ra (RO1–RO8)** qua chip mở rộng I2C **TCA9554PWR** và **8 ngõ vào số (DI1–DI8)** có cách ly quang.
 
-**Định dạng dữ liệu:** Tất cả dữ liệu trả về đều dưới chuẩn `JSON`.
+```
+┌─────────────────┐     Cáp LAN Ethernet     ┌────────────────────────────────────────────────────────┐
+│ PC / Laptop     │◄────────────────────────►│                 ESP32-S3 Board                         │
+│ (192.168.1.100) │                          │  Web Server (Port 80)  |  TCP Push Server (Port 8080)   │
+└─────────────────┘                          └───────────────────────────┬────────────────────────────┘
+                                                                         │ I2C (SDA:42, SCL:41)
+                                                               ┌─────────▼──────────┐
+                                                               │   TCA9554PWR 0x20  │
+                                                               │ ── BARRIER #1 ───  │
+                                                               │ CH1: MỞ (OPEN)     │
+                                                               │ CH2: DỪNG (STOP)   │
+                                                               │ CH3: ĐÓNG (CLOSE)  │
+                                                               │ ── BARRIER #2 ───  │
+                                                               │ CH4: MỞ (OPEN)     │
+                                                               │ CH5: DỪNG (STOP)   │
+                                                               │ CH6: ĐÓNG (CLOSE)  │
+                                                               └────────────────────┘
+```
+
+### Phương thức tương tác chính:
+1. **Giao diện Web UI 3 Tab (Port 80):** Giúp kỹ thuật viên/người vận hành điều khiển, kiểm tra phần cứng và cấu hình thiết bị trực tiếp trên trình duyệt Web (Chrome, Edge, Firefox) từ PC hoặc điện thoại.
+2. **HTTP RESTful API (Port 80):** Cung cấp các Endpoint chuẩn JSON cho phần mềm bãi xe (C#, Python, Java) chủ động phát lệnh điều khiển và truy vấn trạng thái.
+3. **TCP Socket Push Server (Port 8080):** Duy trì kết nối realtime 24/7, tự động "đẩy" (Push) các sự kiện thay đổi trạng thái barrier/relay về phần mềm trung tâm lập tức mà không cần tốn tài nguyên gọi API liên tục.
 
 ---
 
-## 2. GIAO THỨC HTTP API (ĐIỀU KHIỂN & TRUY VẤN)
+## 2. HƯỚNG DẪN KẾT NỐI PHẦN CỨNG & ĐƯA MÁY TÍNH VỀ CÙNG DẢI IP
 
-Giao thức sử dụng là `HTTP GET`.
-*Giả sử IP của thiết bị ESP32 được cấu hình tĩnh là: `192.168.1.100`*
+### 2.1. Cấu hình IP Mặc định của Thiết bị
+- **Địa chỉ IP mặc định:** `192.168.1.200`
+- **Default Gateway:** `192.168.1.1`
+- **Subnet Mask:** `255.255.255.0`
+- **Cổng Web UI:** `80` (Truy cập: `http://192.168.1.200`)
+- **Cổng TCP Push:** `8080`
 
-### 2.1. Điều khiển Barrier (Quan trọng nhất)
-Sử dụng API này để ra lệnh Đóng, Mở hoặc Dừng Barrier. Thiết bị tự động tính toán xuất xung điều khiển (mặc định 400ms) đến các rơ-le tương ứng.
+---
 
-*   **Endpoint:** `GET http://192.168.1.100/api/barrier`
-*   **Tham số (Parameters):**
-    *   `id` (Tùy chọn): ID của barrier (`1` hoặc `2`). Mặc định là `1`.
-    *   `action` (Bắt buộc): `open` | `close` | `stop`
-    *   `duration` (Tùy chọn): Thời gian giữ xung tính bằng mili-giây (Mặc định 400ms, phạm vi 100 - 5000).
+### 2.2. Giải thích cơ chế Địa chỉ IP trong Mạng LAN
+Để Máy tính và ESP32 có thể giao tiếp được với nhau qua cáp LAN:
+- **Địa chỉ IP Máy tính (VD: `192.168.1.100`):** Địa chỉ duy nhất của card mạng máy tính.
+- **Địa chỉ IP ESP32 (`192.168.1.200`):** Địa chỉ duy nhất của bo mạch điều khiển.
+- **Quy tắc kết nối:** Hai thiết bị phải có địa chỉ **CÙNG DẢI MẠNG** (cùng 3 số đầu `192.168.1.x`) nhưng **KHÁC SỐ CUỐI** để tránh trùng lặp IP.
 
-**Ví dụ:** Mở cổng Barrier số 2
-`GET http://192.168.1.100/api/barrier?id=2&action=open`
+---
 
-**Phản hồi (JSON):**
+### 2.3. Hướng dẫn Đặt IP Tĩnh cho Máy tính trên Windows (10 / 11)
+
+Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router có DHCP), bạn cần cài IP tĩnh cho máy tính theo các bước:
+
+1. Nhấn tổ hợp phím **`Win + R`** ➔ Nhập **`ncpa.cpl`** ➔ Nhấn **Enter** (Mở cửa sổ Network Connections).
+2. Chuột phải vào card mạng **Ethernet** ➔ Chọn **Properties**.
+3. Cửa sổ mở ra, chọn **Internet Protocol Version 4 (TCP/IPv4)** ➔ Nhấn nút **Properties**.
+4. Tích chọn **Use the following IP address** và nhập các thông số:
+   - **IP address:** `192.168.1.100` *(hoặc số bất kỳ từ 2 đến 254, trừ 200)*
+   - **Subnet mask:** `255.255.255.0`
+   - **Default gateway:** *(Có thể để trống hoặc nhập `192.168.1.1`)*
+5. Nhấn **OK** ➔ Nhấn **Close** để lưu cấu hình.
+
+```
+┌───────────────────────────────────────────────────────────┐
+│ Internet Protocol Version 4 (TCP/IPv4) Properties         │
+├───────────────────────────────────────────────────────────┤
+│ (•) Use the following IP address:                         │
+│     IP address:       192 . 168 .   1 . 100               │
+│     Subnet mask:      255 . 255 . 255 .   0               │
+│     Default gateway:  192 . 168 .   1 .   1               │
+└───────────────────────────────────────────────────────────┘
+```
+
+6. Kiểm tra thông mạng bằng **Command Prompt (CMD)**:
+   - Mở CMD ➔ Gõ lệnh: `ping 192.168.1.200`
+   - Nếu màn hình hiện `Reply from 192.168.1.200: bytes=32 time<1ms` ➔ **Đã kết nối thành công!**
+
+7. Mở trình duyệt Web (Chrome/Edge) ➔ Gõ địa chỉ: **`http://192.168.1.200`** để vào giao diện điều khiển.
+
+---
+
+## 3. HƯỚNG DẪN SỬ DỤNG GIAO DIỆN WEB UI (3 TAB)
+
+Giao diện Web được thiết kế tối ưu, bao gồm thanh thông tin hệ thống (Status Bar) và 3 Tab chức năng:
+
+```
+┌───────────────────────────────────────────────────────────┐
+│ ⚡ BARRIER CONTROL SYSTEM                                 │
+│ IP: 192.168.1.200 | Uptime: 120s | [ETH OK] | 1 TCP client│
+├───────────────┬─────────────────────────┬─────────────────┤
+│ 🚧 Barrier    │ 🔧 Kiểm tra HW          │ ⚙️ Cấu hình     │
+└───────────────┴─────────────────────────┴─────────────────┘
+```
+
+---
+
+### 3.1. Tab 1: 🚧 Điều khiển Barrier (Barrier Control)
+
+Tab chuyên dụng cho thao tác vận hành hàng ngày:
+
+- **Bảng thông tin Barrier 1 & Barrier 2:**
+  - **Nhãn trạng thái (State Badge):** Hiển thị trạng thái tức thì theo màu sắc:
+    - <span style="color:#94a3b8;font-weight:bold">IDLE / UNKNOWN</span>: Rảnh, sẵn sàng nhận lệnh.
+    - <span style="color:#6ee7b7;font-weight:bold">OPENING / OPEN</span>: Barrier đang mở hoặc đã mở hoàn toàn.
+    - <span style="color:#fca5a5;font-weight:bold">CLOSING / CLOSED</span>: Barrier đang đóng hoặc đã đóng hoàn toàn.
+    - <span style="color:#fde68a;font-weight:bold">STOPPING / STOPPED</span>: Barrier đã dừng ngắt khẩn cấp.
+- **3 Nút lệnh điều khiển:**
+  - **🔓 MỞ (OPEN):** Kích rơ-le Mở (CH1 / CH4).
+  - **✋ DỪNG (STOP):** Kích rơ-le Dừng khẩn cấp (CH2 / CH5), ngắt ngay lập tức lệnh Mở/Đóng.
+  - **🔒 ĐÓNG (CLOSE):** Kích rơ-le Đóng (CH3 / CH6).
+- **Cơ chế Khóa UI thông minh:**
+  - Để tránh người dùng bấm nhầm hoặc spam nút, khi Barrier ở trạng thái nào thì nút tương ứng sẽ tự động bị mờ và khóa cấm bấm (`disabled`).
+  - **Cảnh báo đứt mạng:** Nếu dây mạng bị rút hoặc đứt kết nối, một Banner đỏ rực sẽ hiện lên: `⚠️ MẤT KẾT NỐI MẠNG — ĐÃ KHÓA TOÀN BỘ THAO TÁC`, đảm bảo an toàn tuyệt đối.
+- **Khung Nhật ký (Log Box):** Hiển thị chi tiết 40 sự kiện gần nhất (Thời gian, tên lệnh, phản hồi thành công/thất bại).
+
+---
+
+### 3.2. Tab 2: 🔧 Kiểm tra Phần cứng (Hardware Test)
+
+Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đường truyền I2C:
+
+1. **Chẩn đoán I2C Bus (`▶ Bắt đầu quét`):**
+   - Tự động quét và phát hiện chip mở rộng I/O **TCA9554** tại địa chỉ `0x20` (hoặc các chân SDA/SCL trên bo mạch).
+2. **Kiểm tra 8 Kênh Relay độc lập (CH1 ➔ CH8):**
+   - **XUNG (Pulse):** Kích relay bật trong thời gian cài đặt (từ 100ms ➔ 2000ms) rồi tự động tắt.
+   - **BẬT (ON):** Bật cố định rơ-le.
+   - **TẮT (OFF):** Tắt rơ-le.
+   - Đèn LED màu xanh chỉ thị trạng thái thực tế của từng rơ-le theo thời gian thực.
+
+---
+
+### 3.3. Tab 3: ⚙️ Cấu hình Mạng & Hệ thống (Network Config)
+
+Tab cho phép thay đổi thông số mạng tĩnh và lưu cố định vào bộ nhớ NVS (không bị mất khi tắt điện):
+
+1. **Thay đổi Địa chỉ IP tĩnh:**
+   - **Địa chỉ IP (ESP32):** Nhập IP mới (Ví dụ: `192.168.1.150` hoặc `10.0.0.200`).
+   - **Default Gateway:** Nhập Gateway tương ứng (Ví dụ: `192.168.1.1` hoặc `10.0.0.1`).
+   - **Subnet Mask:** Nhập Subnet (Mặc định `255.255.255.0`).
+2. **Quy trình Lưu & Tự động Khởi động lại:**
+   - Bấm nút **`💾 Lưu & Khởi động lại`**.
+   - ESP32 lưu thông số vào NVS và khởi động lại sau 500ms.
+   - Trang Web tự động hiện hộp thoại đếm ngược **5 giây** và chuyển hướng trình duyệt sang địa chỉ IP mới.
+3. **Giám sát TCP Push Server (Port 8080):**
+   - Hiển thị địa chỉ TCP Socket (`<IP_ESP32>:8080`) và số lượng Client (Phần mềm bãi xe) đang kết nối trực tiếp.
+
+---
+
+## 4. TÀI LIỆU TÍCH HỢP REST API (DÀNH CHO LẬP TRÌNH VIÊN)
+
+Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh điều khiển bằng HTTP GET.
+*(Ví dụ IP thiết bị: `192.168.1.200`)*
+
+### 4.1. Điều khiển Barrier (State Machine & Interlock)
+*   **Endpoint:** `GET /api/barrier`
+*   **Tham số (Query Parameters):**
+    *   `id` *(Tùy chọn)*: ID Barrier (`1` hoặc `2`, mặc định `1`).
+    *   `action` *(Bắt buộc)*: `open` | `stop` | `close`
+    *   `duration` *(Tùy chọn)*: Thời gian xung (ms), mặc định `400`.
+
+**Ví dụ 1: Mở Barrier 1**  
+`GET http://192.168.1.200/api/barrier?id=1&action=open`
+
+**Phản hồi thành công (JSON):**
 ```json
 {
   "result": "ok",
-  "barrier": 2,
+  "barrier": 1,
   "action": "open",
   "duration_ms": 400,
   "current_state": "OPENING"
 }
 ```
-*(Ghi chú: Nếu trạng thái đang bận, `result` có thể trả về "busy" hoặc "preempted")*
 
-### 2.2. Kiểm tra trạng thái hệ thống
-Sử dụng để kiểm tra thiết bị có đang online không, trạng thái các rơ-le và tình trạng barrier.
+**Phản hồi khi DỪNG ngắt khẩn cấp:**
+```json
+{
+  "result": "preempted",
+  "barrier": 1,
+  "action": "stop",
+  "duration_ms": 400,
+  "current_state": "STOPPING"
+}
+```
 
-*   **Endpoint:** `GET http://192.168.1.100/api/status`
+**Phản hồi khi bận (Barrier đang chạy):**
+```json
+{
+  "result": "busy",
+  "barrier": 1,
+  "action": "close",
+  "duration_ms": 400,
+  "current_state": "OPENING"
+}
+```
 
-**Phản hồi (JSON):**
+---
+
+### 4.2. Kiểm tra Trạng thái Toàn hệ thống
+*   **Endpoint:** `GET /api/status`
+
+**Phản hồi mẫu (JSON):**
 ```json
 {
   "status": "online",
-  "ip": "192.168.1.100",
+  "ip": "192.168.1.200",
   "gateway": "192.168.1.1",
   "uptime_s": 3600,
   "eth_link": true,
   "tcp_clients": 1,
   "relays_byte": 1,
   "relays": {
-    "CH1": true,
-    "CH2": false,
-    "CH3": false,
-    "CH4": false,
-    "CH5": false,
-    "CH6": false,
-    "CH7": false,
-    "CH8": false
+    "CH1": true,  "CH2": false, "CH3": false, "CH4": false,
+    "CH5": false, "CH6": false, "CH7": false, "CH8": false
   },
-  "barrier_1_state": "OPEN",
+  "barrier_1_state": "OPENING",
   "barrier_2_state": "IDLE"
 }
 ```
 
-### 2.3. Điều khiển Relay mức thấp (Raw Control)
-Dành cho trường hợp muốn điều khiển từng kênh Relay cụ thể thay vì dùng logic Barrier.
+---
 
-*   **Endpoint:** `GET http://192.168.1.100/api/relay`
-*   **Tham số:**
-    *   `ch` (Kênh Relay): Từ `1` đến `8`, hoặc `all`.
-    *   `action` (Hành động): `on` | `off`. (Nếu không truyền action, mặc định sẽ xuất xung pulse).
-    *   `duration` (Tùy chọn): Thời gian xung (nếu không có action).
+### 4.3. Điều khiển Kênh Relay Thô (Raw Relay Control)
+*   **Endpoint:** `GET /api/relay`
+*   **Tham số:** `ch` (`1`–`8` hoặc `all`), `action` (`pulse` | `on` | `off`), `duration` (ms).
 
-**Ví dụ:** Bật Relay 1
-`GET http://192.168.1.100/api/relay?ch=1&action=on`
+**Ví dụ Bật Relay 3:**  
+`GET http://192.168.1.200/api/relay?ch=3&action=on`
 
-**Phản hồi (JSON):**
+---
+
+### 4.4. Đổi IP qua API
+*   **Endpoint:** `GET /api/config/setip?ip=192.168.1.150&gw=192.168.1.1&sn=255.255.255.0`
+
+---
+
+## 5. TÀI LIỆU TÍCH HỢP TCP PUSH SERVER (PORT 8080 - REALTIME)
+
+Giúp phần mềm bãi xe không cần tốn tài nguyên gọi API (polling) liên tục.
+
+- **Địa chỉ kết nối:** Socket TCP `192.168.1.200:8080`
+- **Tối đa client:** 4 kết nối đồng thời.
+- **Định dạng dữ liệu:** JSON (mỗi sự kiện nằm trên 1 dòng kết thúc bằng `\r\n`).
+
+### Bản tin khi vừa kết nối thành công (Welcome message):
 ```json
-{
-  "status": "success",
-  "channel": 1,
-  "duration_ms": 400,
-  "command": "on"
-}
+{"event":"connected","ip":"192.168.1.200","port":8080,"version":"1.0"}
+```
+
+### Bản tin Sự kiện đẩy về Thời gian thực:
+```json
+{"event":"barrier_cmd","barrier":1,"channel":1,"action":"open","duration_ms":400,"timestamp_ms":12345}
+{"event":"barrier_state","barrier":1,"state":"OPENING","timestamp_ms":12345}
+{"event":"relay_off","channel":1,"timestamp_ms":12745}
+{"event":"barrier_state","barrier":1,"state":"IDLE","timestamp_ms":12745}
+{"event":"relay_preempted","barrier":1,"channel":1,"preempted_by":"STOP","timestamp_ms":13000}
 ```
 
 ---
 
-## 3. GIAO THỨC TCP PUSH (REAL-TIME EVENT)
+## 6. HƯỚNG DẪN KHẮC PHỤC SỰ CỐ (TROUBLESHOOTING)
 
-Giao thức TCP raw socket giúp phần mềm bãi xe không cần tốn tài nguyên gọi API (polling) liên tục.
-
-*   **IP / Port:** `192.168.1.100:8080`
-*   **Luồng hoạt động:**
-    1. Client (Phần mềm PC) mở kết nối Socket TCP đến Port 8080.
-    2. Ngay khi kết nối thành công, ESP32 sẽ gửi bản tin chào đón (Welcome message).
-    3. Client giữ nguyên kết nối (Keep-Alive). Bất cứ khi nào Barrier hoạt động, ESP32 sẽ đẩy bản tin về.
-
-**Bản tin chào đón (ngay khi connect):**
-```json
-{
-  "event": "connected",
-  "ip": "192.168.1.100",
-  "port": 8080,
-  "version": "1.0"
-}
-```
-
-**Bản tin sự kiện (Event Push):**
-Thiết bị sẽ tự động đẩy các bản tin sau khi có sự thay đổi trạng thái hoặc nhận lệnh điều khiển:
-```json
-{"event":"barrier_state","barrier":1,"state":"OPENING","timestamp_ms":123456}
-{"event":"barrier_state","barrier":2,"state":"CLOSED","timestamp_ms":123470}
-{"event":"barrier_cmd","barrier":1,"channel":1,"action":"open","duration_ms":400,"timestamp_ms":123480}
-```
-
-*(Ghi chú: Nếu hệ thống đã đạt giới hạn Client, kết nối sẽ bị từ chối với thông báo: `{"event":"rejected","reason":"max_clients"}`)*
+| Triệu chứng | Nguyên nhân có thể | Cách khắc phục |
+|---|---|---|
+| Không gõ được `http://192.168.1.200` trên máy tính | • Cáp mạng bị lỏng.<br>• Máy tính chưa đặt IP dải `192.168.1.x`. | • Kiểm tra đèn LED cổng RJ45 sáng/chớp.<br>• Làm theo mục 2.3 để đặt IP máy tính thành `192.168.1.100`. |
+| Báo lỗi `Request Timed Out` khi ping | • Khác dải IP Subnet.<br>• ESP32 chưa cấp nguồn. | • Đặt lại Subnet Mask `255.255.255.0`.<br>• Kiểm tra nguồn DC cấp cho ESP32. |
+| Đèn Web UI hiện `OFFLINE` màu đỏ | • Dứt dây mạng LAN.<br>• ESP32 đang khởi động lại. | • Kiểm tra lại dây cáp LAN.<br>• Chờ 5 giây rồi tải lại trang (`Ctrl + F5`). |
+| Đổi IP xong bị mất kết nối Web | Máy tính chưa đổi dải IP theo IP mới của ESP32. | Đổi IP tĩnh máy tính sang cùng dải với IP mới (Ví dụ đổi ESP32 thành `10.0.0.200` thì đổi máy tính thành `10.0.0.100`). |
+| Quên địa chỉ IP đã lưu trong NVS | Không nhớ IP tĩnh đã cài. | Nạp lại firmware hoặc chạy lệnh xóa NVS: `pio run -t erase` để ESP32 quay về `192.168.1.200`. |
 
 ---
-
-## 4. HƯỚNG DẪN CẤU HÌNH MẠNG BAN ĐẦU (CHO KỸ THUẬT VIÊN)
-
-Để thiết bị kết nối vào LAN, kỹ thuật viên cần thiết lập IP tĩnh.
-1. Nguồn, cắm cáp mạng.
-2. Thiết bị mặc định có IP, ví dụ `192.168.1.200`. Truy cập trình duyệt `http://192.168.1.200`.
-3. Giao diện Web hiển thị, nhập IP Tĩnh, Gateway, Subnet mong muốn rồi nhấn **Lưu**.
-4. Hoặc sử dụng API đổi IP:
-   `GET http://192.168.1.200/api/config/setip?ip=192.168.1.100&gw=192.168.1.1&sn=255.255.255.0`
-5. Thiết bị tự động khởi động lại và nhận IP mới.
-
----
-*Tài liệu lưu hành nội bộ dự án.*
+*Tài liệu hướng dẫn bàn giao hệ thống điều khiển Barrier ESP32-S3.*
