@@ -5,9 +5,9 @@
 ---
 
 ## I. GIỚI THIỆU DỰ ÁN
-Dự án nhằm mục đích thiết kế và xây dựng một **Hệ thống điều khiển Barrier thông minh (Dual-Barrier Control System)**. Hệ thống đóng vai trò làm cầu nối giữa phần mềm quản lý bãi xe trung tâm và phần cứng cơ điện của cổng Barrier. 
+Dự án nhằm mục đích thiết kế và xây dựng một **Hệ thống điều khiển Barrier (Dual-Barrier Control System)**. Hệ thống đóng vai trò làm cầu nối giữa phần mềm quản lý bãi xe trung tâm và phần cứng cơ điện của cổng Barrier. 
 
-Hệ thống cho phép điều khiển tự động, giám sát trạng thái vật lý của 2 làn Barrier độc lập theo thời gian thực với độ tin cậy và tính ổn định cao trong môi trường công nghiệp.
+Hệ thống hỗ trợ quá trình điều khiển tự động và giám sát trạng thái vật lý của 2 làn Barrier độc lập, hướng tới nâng cao tính ổn định khi hoạt động trong môi trường bãi xe.
 
 ---
 
@@ -40,12 +40,12 @@ Hệ thống sử dụng bo mạch lõi **Waveshare ESP32-S3 PoE ETH (8 Kênh Đ
 - **Điều khiển (Relay Output - RO):** `CH4` (Mở), `CH5` (Đóng), `CH6` (Dừng).
 - **Phản hồi (Digital Input - DI):** `DI4` (Đã mở hoàn toàn), `DI3` (Đang nâng/hạ hoặc Đã đóng).
 
-*(Tất cả các ngõ vào DI được cấu hình kéo điện áp `PULLDOWN` bên trong vi điều khiển nhằm cách ly nhiễu hoàn toàn khi tín hiệu thả nổi).*
+*(Tất cả các ngõ vào DI được cấu hình kéo điện áp `PULLDOWN` bên trong vi điều khiển nhằm giảm thiểu nguy cơ nhiễu khi tín hiệu thả nổi).*
 
 ---
 
 ## III. KIẾN TRÚC PHẦN MỀM (SOFTWARE ARCHITECTURE)
-Phần mềm Firmware được lập trình bằng C/C++ trên nền tảng ESP32 Arduino Core, áp dụng kiến trúc Non-blocking để xử lý song song các tác vụ mà không làm gián đoạn lẫn nhau, đảm bảo không bỏ sót bất kỳ tín hiệu nào. 
+Phần mềm Firmware được lập trình bằng C/C++ trên nền tảng ESP32 Arduino Core, áp dụng kiến trúc Non-blocking để hỗ trợ xử lý song song các tác vụ, nhằm hạn chế tình trạng bỏ sót tín hiệu trong quá trình vận hành. 
 
 ### 1. Máy trạng thái
 Mỗi Barrier sở hữu một State Machine riêng biệt nhằm phân tích tín hiệu điện (0/1) từ chân DI và quy đổi ra trạng thái cổng vật lý (Physical State):
@@ -82,7 +82,7 @@ graph TD
 <div align="center"><i>Sơ đồ 1: Luồng chuyển đổi trạng thái (State Machine) của Barrier</i></div>
 
 ### 2. Giao thức Mạng (Network & API)
-Hệ thống sử dụng mạng LAN (Cổng RJ45 kết nối qua chip W5500) đảm bảo tính ổn định.
+Hệ thống sử dụng mạng LAN (Cổng RJ45 kết nối qua chip W5500) để giúp duy trì kết nối mạng thường xuyên.
 - **RESTful API (Port 80):** Cung cấp các Endpoint chuẩn hóa (`/api/barrier?id=X&action=Y`) để phần mềm cấp trên có thể gọi lệnh (Open/Close/Stop) bằng JSON.
 - **TCP Push Server (Port 8080):** Kênh giao tiếp thời gian thực. Bất cứ khi nào Barrier có chuyển động hoặc nhận lệnh, thiết bị sẽ tự động xuất bản tin sự kiện (`barrier_state`, `barrier_cmd`) lên phần mềm đang kết nối.
 
@@ -90,13 +90,13 @@ Hệ thống sử dụng mạng LAN (Cổng RJ45 kết nối qua chip W5500) đ�
 Được tích hợp thẳng vào bộ nhớ ROM của vi điều khiển, người dùng chỉ cần gõ IP của thiết bị vào trình duyệt để truy cập:
 - Phản hồi tức thời trên máy tính.
 - Cho phép giám sát trạng thái trực tiếp của 2 Barrier.
-- Tích hợp tính năng an toàn: Tự động vô hiệu hóa nút MỞ khi cổng đang mở, khóa mọi thao tác khi mất mạng.
+- Tích hợp tính năng an toàn (Fail-safe): Hỗ trợ vô hiệu hóa nút bấm điều khiển tương ứng khi cổng đã mở/đóng, và ngắt thao tác khi phát hiện mất mạng.
 - Tích hợp công cụ chẩn đoán phần cứng: Quét địa chỉ I2C, Test từng kênh Relay đơn lẻ, Cấu hình lại IP tĩnh hệ thống.
 
 ---
 
-## IV. TỔNG KẾT VÀ ỨNG DỤNG THỰC TIỄN
-Hệ thống đã được thiết kế và xây dựng hoàn chỉnh từ phần cứng tới phần mềm. Giải pháp này mang lại những ưu điểm vượt trội:
-- **Tiết kiệm phần cứng:** Một bộ vi điều khiển gánh được 2 cổng Barrier cùng lúc, giảm chi phí triển khai tại các bãi xe có làn vào/ra song song.
-- **Tính chính xác:** Không chỉ gửi lệnh "mù", hệ thống theo dõi và báo cáo chính xác cổng có thực sự được mở/đóng hay không nhờ tích hợp DI Feedback.
-- **Dễ dàng tích hợp:** API chuẩn hóa và TCP Push Server giúp mọi phần mềm quản lý bãi xe (viết bằng C#, Python, Java...) đều có thể cắm vào và điều khiển được ngay lập tức.
+## IV. TỔNG KẾT
+Hệ thống đã cơ bản hoàn thiện các chức năng đề ra từ phần cứng tới phần mềm. Các giải pháp đang được áp dụng mang đến một số ưu điểm như:
+- **Tăng cường độ tin cậy:** Thông qua cấu hình phần cứng và tính năng an toàn (Fail-safe) trong phần mềm, hệ thống có khả năng tự động xử lý và bảo vệ mạch phần nào trong các tình huống nhiễu tín hiệu hoặc rớt mạng.
+- **Khả năng giám sát trạng thái:** Việc tích hợp đọc tín hiệu DI (Feedback) giúp phần mềm quản lý trung tâm có thêm cơ sở dữ liệu về trạng thái thực tế của cổng, giảm thiểu rủi ro so với việc chỉ ra lệnh điều khiển một chiều.
+- **Khả năng tương thích:** Hệ thống cung cấp các API tiêu chuẩn và luồng dữ liệu TCP Push, tạo điều kiện thuận lợi hơn cho quá trình ghép nối với đa dạng các phần mềm quản lý bãi xe hiện hành.
