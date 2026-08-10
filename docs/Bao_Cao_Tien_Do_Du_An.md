@@ -67,17 +67,17 @@ graph TD
     OPENING[OPENING]:::moving
     CLOSING[CLOSING]:::moving
 
-    STOP -->|Nhận lệnh MỞ| OPENING
-    STOP -->|Nhận lệnh ĐÓNG| CLOSING
+    STOP -->|Command OPEN| OPENING
+    STOP -->|Command CLOSE| CLOSING
     
-    OPENING -->|Chạm hành trình Mở| OPEN
-    CLOSING -->|Chạm hành trình Đóng| CLOSE
+    OPENING -->|Reach OPEN Limit| OPEN
+    CLOSING -->|Reach CLOSE Limit| CLOSED
     
-    OPEN -->|Nhận lệnh ĐÓNG| CLOSING
-    CLOSE -->|Nhận lệnh MỞ| OPENING
+    OPEN -->|Command CLOSE| CLOSING
+    CLOSED -->|Command OPEN| OPENING
     
-    OPENING -.->|Nhấn Dừng / Vật cản| STOP
-    CLOSING -.->|Nhấn Dừng / Vật cản| STOP
+    OPENING -.->|Command STOP / Obstacle| STOP
+    CLOSING -.->|Command STOP / Obstacle| STOP
 ```
 <div align="center"><i>Sơ đồ 1: Luồng chuyển đổi trạng thái (State Machine) của Barrier</i></div>
 
