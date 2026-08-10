@@ -246,7 +246,7 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
 - **Connection type:** Tích chọn vào mục **`Raw`** (hoặc `Telnet`).
 
 <p align="center">
-  <img src="image-9.png" alt="Cấu hình kết nối TCP Socket trên PuTTY"><br>
+  <img src="image-13.png" alt="Cấu hình kết nối TCP Socket trên PuTTY"><br>
   <em>Hình 4: Cấu hình kết nối TCP Socket (Port 8080) trên PuTTY.</em>
 </p>
 
@@ -257,7 +257,7 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
 - Khi bạn bấm các nút điều khiển **MỞ / DỪNG / ĐÓNG** trên Web UI hoặc có tín hiệu cảm biến DI, PuTTY sẽ tự động hiển thị các dòng JSON phản hồi thời gian thực.
 
 <p align="center">
-  <img src="image-10.png" alt="Nhận bản tin sự kiện JSON thời gian thực trên PuTTY"><br>
+  <img src="image-12.png" alt="Nhận bản tin sự kiện JSON thời gian thực trên PuTTY"><br>
   <em>Hình 5: Nhận bản tin sự kiện JSON thời gian thực trên PuTTY.</em>
 </p>
 
