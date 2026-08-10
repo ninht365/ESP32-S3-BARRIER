@@ -247,12 +247,39 @@ Giúp phần mềm bãi xe không cần tốn tài nguyên gọi API (polling) l
 - **Tối đa client:** 4 kết nối đồng thời.
 - **Định dạng dữ liệu:** JSON (mỗi sự kiện nằm trên 1 dòng kết thúc bằng `\r\n`).
 
-### Bản tin khi vừa kết nối thành công (Welcome message):
+### 5.1. Hướng dẫn Cấu hình Phần mềm PuTTY để Test Nhận Bản tin Realtime
+
+Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin sự kiện TCP Push (Port 8080) từ ESP32 mà không cần viết code phần mềm:
+
+**Bước 1:** Khởi động phần mềm **PuTTY** trên máy tính.
+
+**Bước 2:** Cài đặt các thông số kết nối TCP Socket:
+- **Host Name (or IP address):** Nhập địa chỉ IP của ESP32 (Mặc định: `192.168.1.200`).
+- **Port:** Nhập `8080`.
+- **Connection type:** Tích chọn vào mục **`Raw`** (hoặc `Telnet`).
+
+<p align="center">
+  <img src="image-9.png" alt="Cấu hình kết nối TCP Socket trên PuTTY"><br>
+  <em>Hình 4: Cấu hình kết nối TCP Socket (Port 8080) trên PuTTY.</em>
+</p>
+
+**Bước 3:** Nhấn nút **Open** ở góc dưới để bắt đầu kết nối.
+
+**Bước 4:** Cửa sổ dòng lệnh màn hình đen hiện ra:
+- ESP32 ngay lập tức trả về bản tin chào mừng JSON: `{"event":"connected",...}`
+- Khi bạn bấm các nút điều khiển **MỞ / DỪNG / ĐÓNG** trên Web UI hoặc có tín hiệu cảm biến DI, PuTTY sẽ tự động hiển thị các dòng JSON phản hồi thời gian thực.
+
+<p align="center">
+  <img src="image-10.png" alt="Nhận bản tin sự kiện JSON thời gian thực trên PuTTY"><br>
+  <em>Hình 5: Nhận bản tin sự kiện JSON thời gian thực trên PuTTY.</em>
+</p>
+
+### 5.2. Bản tin khi vừa kết nối thành công (Welcome message):
 ```json
 {"event":"connected","ip":"192.168.1.200","port":8080,"version":"1.0"}
 ```
 
-### Bản tin Sự kiện đẩy về Thời gian thực:
+### 5.3. Bản tin Sự kiện đẩy về Thời gian thực (Event Push):
 ```json
 {"event":"barrier_cmd","barrier":1,"channel":1,"action":"open","duration_ms":400,"timestamp_ms":12345}
 {"event":"barrier_state","barrier":1,"state":"OPENING","timestamp_ms":12345}
