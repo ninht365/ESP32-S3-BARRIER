@@ -4,7 +4,7 @@
 class FixedEthernetServer : public EthernetServer {
 public:
     FixedEthernetServer(uint16_t port) : EthernetServer(port) {}
-    void begin(uint16_t port = 0) override {
+    void begin(uint16_t port = 0) {
         (void)port;
         EthernetServer::begin();
     }

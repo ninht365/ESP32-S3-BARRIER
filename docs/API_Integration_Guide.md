@@ -25,16 +25,18 @@ Sử dụng API này để ra lệnh Đóng, Mở hoặc Dừng Barrier. Thiết
 
 *   **Endpoint:** `GET http://192.168.1.100/api/barrier`
 *   **Tham số (Parameters):**
+    *   `id` (Tùy chọn): ID của barrier (`1` hoặc `2`). Mặc định là `1`.
     *   `action` (Bắt buộc): `open` | `close` | `stop`
     *   `duration` (Tùy chọn): Thời gian giữ xung tính bằng mili-giây (Mặc định 400ms, phạm vi 100 - 5000).
 
-**Ví dụ:** Mở cổng
-`GET http://192.168.1.100/api/barrier?action=open`
+**Ví dụ:** Mở cổng Barrier số 2
+`GET http://192.168.1.100/api/barrier?id=2&action=open`
 
 **Phản hồi (JSON):**
 ```json
 {
-  "result": "ok", 
+  "result": "ok",
+  "barrier": 2,
   "action": "open",
   "duration_ms": 400,
   "current_state": "OPENING"
@@ -67,7 +69,8 @@ Sử dụng để kiểm tra thiết bị có đang online không, trạng thái
     "CH7": false,
     "CH8": false
   },
-  "barrier_state": "IDLE"
+  "barrier_1_state": "OPEN",
+  "barrier_2_state": "IDLE"
 }
 ```
 

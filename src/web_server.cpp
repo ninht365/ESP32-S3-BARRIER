@@ -9,7 +9,7 @@
 class FixedEthernetServer : public EthernetServer {
 public:
     FixedEthernetServer(uint16_t port) : EthernetServer(port) {}
-    void begin(uint16_t port = 0) override {
+    void begin(uint16_t port = 0) {
         (void)port;
         EthernetServer::begin();
     }
@@ -109,7 +109,7 @@ void WebServer_Loop() {
             }
 
             // ==================================================
-            // ROUTE: GET /api/barrier?action=open|stop|close
+            // ROUTE: GET /api/barrier?id=1|2&action=open|stop|close
             // ==================================================
             if (reqLine.indexOf("/api/barrier") != -1) {
                 if (Ethernet.linkStatus() != LinkON) {
@@ -121,22 +121,28 @@ void WebServer_Loop() {
                     if (durStr.length() > 0) duration = durStr.toInt();
                     if (duration < 100 || duration > 5000) duration = 400;
 
-                    uint8_t actionCH = 0;
-                    if      (action == "open")  actionCH = BARRIER_CH_OPEN;
-                    else if (action == "stop")  actionCH = BARRIER_CH_STOP;
-                    else if (action == "close") actionCH = BARRIER_CH_CLOSE;
+                    String idStr = getParam(reqLine, "id");
+                    int barrier_id = (idStr.length() > 0) ? idStr.toInt() : 1;
 
-                    if (actionCH == 0) {
+                    BarrierAction act = (BarrierAction)0;
+                    if      (action == "open")  act = ACTION_OPEN;
+                    else if (action == "stop")  act = ACTION_STOP;
+                    else if (action == "close") act = ACTION_CLOSE;
+
+                    if (act == 0) {
                         sendJSON(client, "{\"result\":\"error\",\"error\":\"action phai la open/stop/close\"}", 400);
+                    } else if (barrier_id < 1 || barrier_id > 2) {
+                        sendJSON(client, "{\"result\":\"error\",\"error\":\"id phai la 1 hoac 2\"}", 400);
                     } else {
-                        BarrierResult res = Relay_BarrierCmd(actionCH, (uint16_t)duration);
+                        BarrierResult res = Relay_BarrierCmd(barrier_id, act, (uint16_t)duration);
                         String resStr = (res == BARRIER_CMD_OK)        ? "ok"
                                       : (res == BARRIER_CMD_PREEMPTED) ? "preempted"
                                       :                                  "busy";
                         String jsonResp = "{\"result\":\"" + resStr
-                                        + "\",\"action\":\"" + action
+                                        + "\",\"barrier\":" + String(barrier_id)
+                                        + ",\"action\":\"" + action
                                         + "\",\"duration_ms\":" + String(duration)
-                                        + ",\"current_state\":\"" + String(Relay_BarrierStateName()) + "\"}";
+                                        + ",\"current_state\":\"" + String(Relay_BarrierStateName(Relay_GetBarrierState(barrier_id))) + "\"}";
                         sendJSON(client, jsonResp);
                     }
                 }
@@ -162,7 +168,8 @@ void WebServer_Loop() {
                     + ",\"tcp_clients\":" + String(TcpPush_ClientCount())
                     + ",\"relays_byte\":"+ String(st)
                     + ",\"relays\":"    + chJson
-                    + ",\"barrier_state\":\"" + String(Relay_BarrierStateName()) + "\""
+                    + ",\"barrier_1_state\":\"" + String(Relay_BarrierStateName(Relay_GetBarrierState(1))) + "\""
+                    + ",\"barrier_2_state\":\"" + String(Relay_BarrierStateName(Relay_GetBarrierState(2))) + "\""
                     + "}";
                 sendJSON(client, jsonResp);
 

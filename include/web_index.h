@@ -35,29 +35,32 @@ body{background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
 .badge.ok{background:#059669}.badge.err{background:#dc2626}.badge.warn{background:#d97706}
 
 /* === TAB 1: BARRIER CONTROL === */
-.barrier-card{background:var(--card);border-radius:12px;border:2px solid var(--border);padding:20px;margin-bottom:12px}
+.barrier-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:600px){.barrier-grid{grid-template-columns:1fr}}
+
+.barrier-card{background:var(--card);border-radius:12px;border:2px solid var(--border);padding:20px}
 .barrier-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .barrier-title h2{font-size:1rem;color:#60a5fa}
 .state-badge{padding:5px 14px;border-radius:20px;font-size:.8rem;font-weight:bold;transition:all .3s}
 .state-IDLE{background:#334155;color:#94a3b8}
+.state-UNKNOWN{background:#334155;color:#94a3b8}
 .state-OPENING{background:#065f46;color:#6ee7b7;animation:pulse-glow 1s infinite}
+.state-OPEN{background:#10b981;color:#fff}
 .state-CLOSING{background:#7f1d1d;color:#fca5a5;animation:pulse-glow 1s infinite}
+.state-CLOSED{background:#ef4444;color:#fff}
 .state-STOPPING{background:#78350f;color:#fde68a;animation:pulse-glow 1s infinite}
+.state-STOPPED{background:#f59e0b;color:#fff}
 @keyframes pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}50%{box-shadow:0 0 8px 3px rgba(255,255,255,.2)}}
 
 .barrier-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.b-btn{padding:20px 8px;border:none;border-radius:10px;color:#fff;font-size:.95rem;font-weight:bold;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.b-btn{padding:15px 4px;border:none;border-radius:10px;color:#fff;font-size:.85rem;font-weight:bold;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .b-btn:hover{transform:translateY(-2px);filter:brightness(1.15)}
 .b-btn:active{transform:translateY(0);filter:brightness(.9)}
-.b-btn .icon{font-size:1.5rem}
+.b-btn .icon{font-size:1.3rem}
 .b-btn.open {background:linear-gradient(135deg,#065f46,#10b981)}
 .b-btn.stop {background:linear-gradient(135deg,#78350f,#f59e0b)}
 .b-btn.close{background:linear-gradient(135deg,#7f1d1d,#ef4444)}
 .b-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-
-.dur-row{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.82rem;color:var(--muted)}
-.dur-row input[type=range]{flex:1;accent-color:#3b82f6}
-.dur-val{color:#60a5fa;font-weight:bold;min-width:55px;text-align:right}
 
 /* Log box */
 .log{background:#0a0f1e;border-radius:8px;border:1px solid var(--border);padding:10px;font-family:monospace;font-size:.75rem;max-height:150px;overflow-y:auto;margin-top:12px}
@@ -111,7 +114,7 @@ body{background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
 
 <div class="hdr">
   <h1>⚡ BARRIER CONTROL SYSTEM</h1>
-  <p>ESP32-S3 | Ethernet W5500 | TCA9554 8-CH Relay</p>
+  <p>ESP32-S3 | Dual Barrier | DI Feedback</p>
 </div>
 
 <!-- Status bar -->
@@ -127,8 +130,8 @@ body{background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
 
 <!-- Tab bar -->
 <div class="tabs">
-  <div class="tab active" id="tab-ctrl"   onclick="switchTab('ctrl')">🚧 Barrier</div>
-  <div class="tab"        id="tab-hw"     onclick="switchTab('hw')">🔧 Kiểm tra HW</div>
+  <div class="tab active" id="tab-ctrl"   onclick="switchTab('ctrl')">🚧 Điều khiển</div>
+  <div class="tab"        id="tab-hw"     onclick="switchTab('hw')">🔧 HW Test</div>
   <div class="tab"        id="tab-cfg"    onclick="switchTab('cfg')">⚙️ Cấu hình</div>
 </div>
 
@@ -136,22 +139,45 @@ body{background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
 <div class="pane active" id="pane-ctrl">
   <div class="dis-banner" id="dis-banner">⚠️ MẤT KẾT NỐI MẠNG — ĐÃ KHÓA TOÀN BỘ THAO TÁC</div>
 
-  <div class="barrier-card">
-    <div class="barrier-title">
-      <h2>🚧 BARRIER #1</h2>
-      <span class="state-badge state-IDLE" id="barrier-state-badge">IDLE</span>
+  <div class="barrier-grid">
+    <!-- BARRIER 1 -->
+    <div class="barrier-card">
+      <div class="barrier-title">
+        <h2>🚧 BARRIER 1</h2>
+        <span class="state-badge state-UNKNOWN" id="b1-state-badge">UNKNOWN</span>
+      </div>
+
+      <div class="barrier-btns">
+        <button class="b-btn open"  id="b1-btn-open"  onclick="barrierCmd(1, 'open')">
+          <span class="icon">🔓</span><span>MỞ</span>
+        </button>
+        <button class="b-btn stop"  id="b1-btn-stop"  onclick="barrierCmd(1, 'stop')">
+          <span class="icon">✋</span><span>DỪNG</span>
+        </button>
+        <button class="b-btn close" id="b1-btn-close" onclick="barrierCmd(1, 'close')">
+          <span class="icon">🔒</span><span>ĐÓNG</span>
+        </button>
+      </div>
     </div>
 
-    <div class="barrier-btns">
-      <button class="b-btn open"  id="btn-open"  onclick="barrierCmd('open')">
-        <span class="icon">🔓</span><span>MỞ</span>
-      </button>
-      <button class="b-btn stop"  id="btn-stop"  onclick="barrierCmd('stop')">
-        <span class="icon">✋</span><span>DỪNG</span>
-      </button>
-      <button class="b-btn close" id="btn-close" onclick="barrierCmd('close')">
-        <span class="icon">🔒</span><span>ĐÓNG</span>
-      </button>
+    <!-- BARRIER 2 -->
+    <div class="barrier-card">
+      <div class="barrier-title">
+        <h2>🚧 BARRIER 2</h2>
+        <span class="state-badge state-UNKNOWN" id="b2-state-badge">UNKNOWN</span>
+      </div>
+
+      <div class="barrier-btns">
+        <button class="b-btn open"  id="b2-btn-open"  onclick="barrierCmd(2, 'open')">
+          <span class="icon">🔓</span><span>MỞ</span>
+        </button>
+        <button class="b-btn stop"  id="b2-btn-stop"  onclick="barrierCmd(2, 'stop')">
+          <span class="icon">✋</span><span>DỪNG</span>
+        </button>
+        <button class="b-btn close" id="b2-btn-close" onclick="barrierCmd(2, 'close')">
+          <span class="icon">🔒</span><span>ĐÓNG</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -236,17 +262,15 @@ function addLog(msg, type='info', boxId='log-ctrl') {
 let isRequestInFlight = false;
 let networkLost = false;
 
-function updateButtonStates(st) {
+function updateButtonStates(id, st) {
   const lockAll = isRequestInFlight || networkLost;
+  const btnOpen  = document.getElementById('b'+id+'-btn-open');
+  const btnStop  = document.getElementById('b'+id+'-btn-stop');
+  const btnClose = document.getElementById('b'+id+'-btn-close');
 
-  const btnOpen  = document.getElementById('btn-open');
-  const btnStop  = document.getElementById('btn-stop');
-  const btnClose = document.getElementById('btn-close');
-
-  // Khóa nút đang hoạt động (ví dụ: đang MỞ thì khóa nút MỞ, chỉ cho bấm DỪNG hoặc ĐÓNG)
-  if (btnOpen)  btnOpen.disabled  = lockAll || (st === 'OPENING');
-  if (btnStop)  btnStop.disabled  = lockAll || (st === 'STOPPING');
-  if (btnClose) btnClose.disabled = lockAll || (st === 'CLOSING');
+  if (btnOpen)  btnOpen.disabled  = lockAll || (st === 'OPENING') || (st === 'OPEN');
+  if (btnStop)  btnStop.disabled  = lockAll; // Stop can always be pressed unless network is lost
+  if (btnClose) btnClose.disabled = lockAll || (st === 'CLOSING') || (st === 'CLOSED');
 }
 
 function handleNetworkLoss(msg) {
@@ -258,7 +282,8 @@ function handleNetworkLoss(msg) {
     badge.className = 'badge err';
     addLog('⚠️ MẤT KẾT NỐI MẠNG: ' + (msg || 'Đã khóa toàn bộ thao tác'), 'err');
   }
-  updateButtonStates('IDLE');
+  updateButtonStates(1, 'IDLE');
+  updateButtonStates(2, 'IDLE');
 }
 
 // =================== STATUS UPDATE ===================
@@ -293,14 +318,19 @@ async function updateStatus() {
     document.getElementById('tcp-count').innerText = cnt;
     document.getElementById('tcp-dot').className = 'tcp-dot' + (cnt>0?' active':'');
 
-    // Barrier state
-    const st = d.barrier_state || 'IDLE';
-    const sb = document.getElementById('barrier-state-badge');
-    sb.innerText = st;
-    sb.className = 'state-badge state-'+st;
+    // Barrier 1 state
+    const st1 = d.barrier_1_state || 'UNKNOWN';
+    const sb1 = document.getElementById('b1-state-badge');
+    sb1.innerText = st1;
+    sb1.className = 'state-badge state-'+st1;
+    updateButtonStates(1, st1);
 
-    // Cập nhật trạng thái nút
-    updateButtonStates(st);
+    // Barrier 2 state
+    const st2 = d.barrier_2_state || 'UNKNOWN';
+    const sb2 = document.getElementById('b2-state-badge');
+    sb2.innerText = st2;
+    sb2.className = 'state-badge state-'+st2;
+    updateButtonStates(2, st2);
 
     // TCP address for config tab
     if (d.ip) {
@@ -332,18 +362,19 @@ async function updateStatus() {
 }
 
 // =================== BARRIER COMMANDS ===================
-async function barrierCmd(action) {
+async function barrierCmd(id, action) {
   if (networkLost || isRequestInFlight) return;
 
   isRequestInFlight = true;
-  updateButtonStates('IDLE');
+  updateButtonStates(1, 'IDLE'); // Khóa tạm thời
+  updateButtonStates(2, 'IDLE');
 
-  addLog('Gửi lệnh: ' + action.toUpperCase() + '...', 'info');
+  addLog('Gửi lệnh: B' + id + ' ' + action.toUpperCase() + '...', 'info');
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 2000);
 
   try {
-    const r = await fetch('/api/barrier?action=' + action, { signal: controller.signal });
+    const r = await fetch('/api/barrier?id=' + id + '&action=' + action, { signal: controller.signal });
     clearTimeout(timeoutId);
     if (!r.ok) {
       const errJson = await r.json().catch(() => ({}));
@@ -355,7 +386,7 @@ async function barrierCmd(action) {
     }
     const d = await r.json();
     if (d.result === 'ok') {
-      addLog('Lệnh ' + action.toUpperCase() + ' thành công', 'ok');
+      addLog('Lệnh B' + id + ' ' + action.toUpperCase() + ' thành công', 'ok');
     }
   } catch(e) {
     clearTimeout(timeoutId);

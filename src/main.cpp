@@ -46,10 +46,11 @@ void loop() {
     // Heartbeat mỗi 3 phút
     if (millis() - lastHeartbeat > 180000) {
         lastHeartbeat = millis();
-        Serial.printf("[HEARTBEAT] IP:%s | Link:%s | Barrier:%s | TCP:%d clients\n",
+        Serial.printf("[HEARTBEAT] IP:%s | Link:%s | B1:%s B2:%s | TCP:%d clients\n",
             Ethernet.localIP().toString().c_str(),
             (Ethernet.linkStatus() == LinkON) ? "OK" : "OFF",
-            Relay_BarrierStateName(),
+            Relay_BarrierStateName(Relay_GetBarrierState(1)),
+            Relay_BarrierStateName(Relay_GetBarrierState(2)),
             TcpPush_ClientCount());
     }
 }

@@ -1,4 +1,5 @@
 #include "relay_control.h"
+#include "config.h"
 #include "tcp_push.h"
 #include <Wire.h>
 
@@ -8,7 +9,19 @@
 static unsigned long relayOffTime[8]  = {0};
 static bool          relayPulsing[8]  = {false};
 static uint8_t       currentRelayState = 0x00;
-static BarrierState  barrierState      = BARRIER_IDLE;
+
+struct BarrierContext {
+    BarrierState state = BARRIER_IDLE;
+    unsigned long lastDIToggleTime = 0;
+    bool lastDIMovingState = false;
+    uint8_t relayOpenCh;
+    uint8_t relayCloseCh;
+    uint8_t relayStopCh;
+    uint8_t diFullyOpenPin;
+    uint8_t diMovingClosedPin;
+};
+
+static BarrierContext barriers[2];
 
 // ==========================================
 // THAO TÁC I2C THẤP
@@ -43,8 +56,36 @@ void Relay_Init() {
     Wire.endTransmission();
 
     writeTCA9554(0x00); // Tắt tất cả relay
-    barrierState = BARRIER_IDLE;
-    Serial.printf("[RELAY] Khoi tao xong. Barrier: IDLE\n");
+
+    // Cấu hình DI Pins
+    pinMode(DI1_PIN, INPUT);
+    pinMode(DI2_PIN, INPUT);
+    pinMode(DI3_PIN, INPUT);
+    pinMode(DI4_PIN, INPUT);
+    pinMode(DI5_PIN, INPUT);
+    pinMode(DI6_PIN, INPUT);
+    pinMode(DI7_PIN, INPUT);
+    pinMode(DI8_PIN, INPUT);
+
+    // Cấu hình Barrier 1
+    barriers[0].relayOpenCh = B1_RELAY_OPEN;
+    barriers[0].relayCloseCh = B1_RELAY_CLOSE;
+    barriers[0].relayStopCh = B1_RELAY_STOP;
+    barriers[0].diFullyOpenPin = DI2_PIN;
+    barriers[0].diMovingClosedPin = DI1_PIN;
+    barriers[0].lastDIMovingState = digitalRead(DI1_PIN);
+    barriers[0].lastDIToggleTime = millis() - 3000; // Giả lập đã đứng yên 3s
+
+    // Cấu hình Barrier 2
+    barriers[1].relayOpenCh = B2_RELAY_OPEN;
+    barriers[1].relayCloseCh = B2_RELAY_CLOSE;
+    barriers[1].relayStopCh = B2_RELAY_STOP;
+    barriers[1].diFullyOpenPin = DI4_PIN;
+    barriers[1].diMovingClosedPin = DI3_PIN;
+    barriers[1].lastDIMovingState = digitalRead(DI3_PIN);
+    barriers[1].lastDIToggleTime = millis() - 3000; // Giả lập đã đứng yên 3s
+
+    Serial.printf("[RELAY] Khoi tao xong 2 Barrier.\n");
 }
 
 // ==========================================
@@ -73,8 +114,13 @@ uint8_t Relay_GetState() {
     return currentRelayState;
 }
 
+// ==========================================
+// LOOP & STATE MACHINE
+// ==========================================
 void Relay_Loop() {
     unsigned long now = millis();
+    
+    // 1. Tắt các relay đã hết thời gian pulse
     for (int i = 0; i < 8; i++) {
         if (relayPulsing[i] && now >= relayOffTime[i]) {
             relayPulsing[i] = false;
@@ -86,90 +132,97 @@ void Relay_Loop() {
             Serial.printf("[RELAY] CH%d -> OFF (ket thuc xung)\n", ch);
         }
     }
+
+    // 2. Đọc trạng thái DI cho 2 Barrier
+    for (int i = 0; i < 2; i++) {
+        bool fullyOpen = digitalRead(barriers[i].diFullyOpenPin);
+        bool movingClosed = digitalRead(barriers[i].diMovingClosedPin);
+
+        if (movingClosed != barriers[i].lastDIMovingState) {
+            barriers[i].lastDIMovingState = movingClosed;
+            barriers[i].lastDIToggleTime = now;
+        }
+
+        unsigned long timeSinceToggle = now - barriers[i].lastDIToggleTime;
+        BarrierState newState = barriers[i].state;
+
+        if (fullyOpen) {
+            newState = BARRIER_OPEN;
+        } else if (timeSinceToggle < 2000) {
+            // Đang nhấp nháy -> Đang nâng hoặc đang hạ
+            if (currentRelayState & (1 << (barriers[i].relayCloseCh - 1))) {
+                newState = BARRIER_CLOSING;
+            } else {
+                newState = BARRIER_OPENING; 
+            }
+        } else {
+            // Đã đứng yên quá 2 giây
+            if (movingClosed == 1) {
+                newState = BARRIER_CLOSED;
+            } else {
+                newState = BARRIER_STOPPED;
+            }
+        }
+
+        if (newState != barriers[i].state && newState != BARRIER_UNKNOWN) {
+            barriers[i].state = newState;
+            String evt = "{\"event\":\"barrier_state\",\"barrier\":" + String(i + 1) + ",\"state\":\"" + Relay_BarrierStateName(newState) + "\",\"timestamp_ms\":" + String(now) + "}";
+            TcpPush_Broadcast(evt);
+            Serial.printf("[BARRIER %d] State changed to %s\n", i + 1, Relay_BarrierStateName(newState));
+        }
+    }
 }
 
 // ==========================================
 // BARRIER INTERLOCK STATE MACHINE
 // ==========================================
-BarrierState Relay_GetBarrierState() {
-    return barrierState;
+BarrierState Relay_GetBarrierState(uint8_t barrier_id) {
+    if (barrier_id < 1 || barrier_id > 2) return BARRIER_UNKNOWN;
+    return barriers[barrier_id - 1].state;
 }
 
-const char* Relay_BarrierStateName() {
-    switch (barrierState) {
+const char* Relay_BarrierStateName(BarrierState state) {
+    switch (state) {
         case BARRIER_IDLE:     return "IDLE";
         case BARRIER_OPENING:  return "OPENING";
-        case BARRIER_STOPPING: return "STOPPING";
+        case BARRIER_OPEN:     return "OPEN";
         case BARRIER_CLOSING:  return "CLOSING";
+        case BARRIER_CLOSED:   return "CLOSED";
+        case BARRIER_STOPPED:  return "STOPPED";
         default:               return "UNKNOWN";
     }
 }
 
-BarrierResult Relay_BarrierCmd(uint8_t action_ch, uint16_t duration_ms) {
-    (void)duration_ms; // Tat ca 3 kenh deu o che do GIU MAI (hold mode), khong tu dong nha
-    unsigned long now = millis();
-    bool isStop  = (action_ch == BARRIER_CH_STOP);  // CH2
-    bool isOpen  = (action_ch == BARRIER_CH_OPEN);  // CH1
-    bool isClose = (action_ch == BARRIER_CH_CLOSE); // CH3
+BarrierResult Relay_BarrierCmd(uint8_t barrier_id, BarrierAction action, uint16_t duration_ms) {
+    if (barrier_id < 1 || barrier_id > 2) return BARRIER_CMD_ERR_ID;
+    int idx = barrier_id - 1;
+    
+    uint8_t ch = 0;
+    const char* actionName = "";
 
-    if (!isStop && !isOpen && !isClose) return BARRIER_CMD_BUSY;
-
-    // --- 1. LENH MO (CH1) ---
-    if (isOpen) {
-        if (barrierState == BARRIER_OPENING) {
-            // Da dang MO -> Giu nguyen, khong tat
-            return BARRIER_CMD_OK;
-        }
-        // Tat ngay lap tuc CH2 (DUNG) va CH3 (DONG) neu dang bat
-        Relay_Off(BARRIER_CH_STOP);
-        Relay_Off(BARRIER_CH_CLOSE);
-
-        // Bat CH1 (MO) va GIU NGUYEN
-        barrierState = BARRIER_OPENING;
-        Relay_On(BARRIER_CH_OPEN);
-        TcpPush_Broadcast("{\"event\":\"barrier_cmd\",\"barrier\":1,\"channel\":1,\"action\":\"open\",\"mode\":\"hold\",\"timestamp_ms\":" + String(now) + "}");
-        TcpPush_Broadcast("{\"event\":\"barrier_state\",\"barrier\":1,\"state\":\"OPENING\",\"timestamp_ms\":" + String(now) + "}");
-        Serial.println("[BARRIER] CH1 (MO) -> ON (giu mai)");
-        return BARRIER_CMD_OK;
+    if (action == ACTION_OPEN) {
+        ch = barriers[idx].relayOpenCh;
+        actionName = "open";
+    } else if (action == ACTION_CLOSE) {
+        ch = barriers[idx].relayCloseCh;
+        actionName = "close";
+    } else if (action == ACTION_STOP) {
+        ch = barriers[idx].relayStopCh;
+        actionName = "stop";
     }
 
-    // --- 2. LENH DUNG (CH2) ---
-    if (isStop) {
-        if (barrierState == BARRIER_STOPPING) {
-            // Da dang DUNG -> Giu nguyen, khong tat
-            return BARRIER_CMD_OK;
-        }
-        // Tat ngay lap tuc CH1 (MO) va CH3 (DONG) neu dang bat
-        Relay_Off(BARRIER_CH_OPEN);
-        Relay_Off(BARRIER_CH_CLOSE);
+    if (ch == 0) return BARRIER_CMD_ERR_ID;
 
-        // Bat CH2 (DUNG) va GIU NGUYEN
-        barrierState = BARRIER_STOPPING;
-        Relay_On(BARRIER_CH_STOP);
-        TcpPush_Broadcast("{\"event\":\"barrier_cmd\",\"barrier\":1,\"channel\":2,\"action\":\"stop\",\"mode\":\"hold\",\"timestamp_ms\":" + String(now) + "}");
-        TcpPush_Broadcast("{\"event\":\"barrier_state\",\"barrier\":1,\"state\":\"STOPPING\",\"timestamp_ms\":" + String(now) + "}");
-        Serial.println("[BARRIER] CH2 (DUNG) -> ON (giu mai)");
-        return BARRIER_CMD_OK;
-    }
+    // Pulse lệnh điều khiển nút bấm
+    Relay_Pulse(ch, duration_ms);
 
-    // --- 3. LENH DONG (CH3) ---
-    if (isClose) {
-        if (barrierState == BARRIER_CLOSING) {
-            // Da dang DONG -> Giu nguyen, khong tat
-            return BARRIER_CMD_OK;
-        }
-        // Tat ngay lap tuc CH1 (MO) va CH2 (DUNG) neu dang bat
-        Relay_Off(BARRIER_CH_OPEN);
-        Relay_Off(BARRIER_CH_STOP);
-
-        // Bat CH3 (DONG) va GIU NGUYEN
-        barrierState = BARRIER_CLOSING;
-        Relay_On(BARRIER_CH_CLOSE);
-        TcpPush_Broadcast("{\"event\":\"barrier_cmd\",\"barrier\":1,\"channel\":3,\"action\":\"close\",\"mode\":\"hold\",\"timestamp_ms\":" + String(now) + "}");
-        TcpPush_Broadcast("{\"event\":\"barrier_state\",\"barrier\":1,\"state\":\"CLOSING\",\"timestamp_ms\":" + String(now) + "}");
-        Serial.println("[BARRIER] CH3 (DONG) -> ON (giu mai)");
-        return BARRIER_CMD_OK;
-    }
+    String evt = "{\"event\":\"barrier_cmd\",\"barrier\":" + String(barrier_id) 
+               + ",\"channel\":" + String(ch) 
+               + ",\"action\":\"" + String(actionName) 
+               + "\",\"duration_ms\":" + String(duration_ms) 
+               + ",\"timestamp_ms\":" + String(millis()) + "}";
+    TcpPush_Broadcast(evt);
+    Serial.printf("[BARRIER %d] Nhan lenh %s (CH%d xung %dms)\n", barrier_id, actionName, ch, duration_ms);
 
     return BARRIER_CMD_OK;
 }
