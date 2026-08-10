@@ -1,47 +1,62 @@
-# BÁO CÁO TIẾN ĐỘ & NÂNG CẤP HỆ THỐNG ESP32-S3 BARRIER
-**Người báo cáo:** [Tên của bạn]
-**Giai đoạn:** Nâng cấp tính năng Dual-Barrier & Tích hợp DI Feedback
+# BÁO CÁO TỔNG QUAN DỰ ÁN HỆ THỐNG ĐIỀU KHIỂN BARRIER TRUNG TÂM
+**Người thực hiện:** [Tên của bạn]
+**Nền tảng phần cứng:** ESP32-S3 PoE ETH (8DI - 8RO) & Board CAME ZL38
 
 ---
 
-## I. TỔNG QUAN YÊU CẦU NÂNG CẤP
-Hệ thống cũ chỉ đáp ứng điều khiển cơ bản cho 1 Barrier. Để đáp ứng nhu cầu thực tế của dự án, hệ thống đã được tái cấu trúc và nâng cấp với 3 mục tiêu cốt lõi:
-1. Quản lý đồng thời **2 Barrier độc lập** trên cùng một bo mạch ESP32-S3 PoE ETH.
-2. Tích hợp đọc tín hiệu phản hồi từ phần cứng (Digital Input - DI) của board CAME ZL38 để xác định **chính xác trạng thái thực tế** của cổng.
-3. Nâng cấp phương thức giao tiếp mạng (Web UI, API, TCP Socket) để điều khiển và phản hồi theo **thời gian thực (Real-time)**.
+## I. GIỚI THIỆU DỰ ÁN
+Dự án nhằm mục đích thiết kế và xây dựng một **Hệ thống điều khiển Barrier thông minh (Dual-Barrier Control System)**. Hệ thống đóng vai trò làm cầu nối (Gateway) giữa phần mềm quản lý bãi xe trung tâm (hoặc Camera AI) và phần cứng cơ điện của cổng Barrier. 
+
+Hệ thống cho phép điều khiển tự động, theo dõi chính xác trạng thái vật lý của 2 làn Barrier độc lập theo thời gian thực (Real-time) với độ tin cậy và tính ổn định cao trong môi trường công nghiệp.
 
 ---
 
-## II. CÁC HẠNG MỤC ĐÃ HOÀN THÀNH
+## II. KIẾN TRÚC PHẦN CỨNG (HARDWARE ARCHITECTURE)
+Hệ thống sử dụng bo mạch lõi **Waveshare ESP32-S3 PoE ETH (8 Kênh Đầu Vào Số - 8 Kênh Rơ-le)** để kết nối với bo mạch **CAME ZL38** của Barrier. Cấu hình phần cứng được chia làm 2 làn độc lập:
 
-### 1. Cấu trúc lại Firmware (Hardware Layer)
-- **Thiết lập Hardware Mapping cho 2 Barrier:**
-  - **Barrier 1:** Sử dụng Kênh Rơ-le 1 (Mở), 2 (Đóng), 3 (Dừng). Phản hồi DI qua DI2 (Đã mở) và DI1 (Đang chạy/Đã đóng).
-  - **Barrier 2:** Sử dụng Kênh Rơ-le 4 (Mở), 5 (Đóng), 6 (Dừng). Phản hồi DI qua DI4 (Đã mở) và DI3 (Đang chạy/Đã đóng).
-- **Xử lý chống nhiễu phần cứng:** Cấu hình toàn bộ chân DI sang chế độ `INPUT_PULLDOWN` để loại bỏ hoàn toàn nhiễu tín hiệu (tín hiệu ảo) khi bo mạch thả nổi hoặc khi rớt kết nối vật lý với Barrier.
+### 1. Barrier 1
+- **Điều khiển (Relay Output - RO):** 
+  - `CH1`: Điều khiển lệnh MỞ (Nối vào chân `2-3` của ZL38).
+  - `CH2`: Điều khiển lệnh ĐÓNG (Nối vào chân `2-7` của ZL38).
+  - `CH3`: Điều khiển lệnh DỪNG (Nối vào chân STOP của ZL38).
+- **Phản hồi (Digital Input - DI):**
+  - `DI2`: Giám sát trạng thái **Đã mở hoàn toàn** (Nối vào chân `5` của ZL38).
+  - `DI1`: Giám sát trạng thái **Đang nâng/hạ** hoặc **Đã đóng hoàn toàn** (Nối vào chân `E` của ZL38).
 
-### 2. Phát triển State Machine (Logic Layer)
-Xây dựng một Cỗ máy trạng thái (State Machine) thông minh dựa trên tín hiệu của chân DI:
-- **Xử lý tín hiệu nhấp nháy:** Phát hiện xung đảo mức (0/1) liên tục từ CAME ZL38 để tự động suy luận trạng thái `OPENING` (Đang nâng) hoặc `CLOSING` (Đang hạ).
-- **Xử lý tín hiệu đứng yên:** Sử dụng timer để theo dõi. Nếu tín hiệu giữ nguyên trong 2 giây, hệ thống sẽ chốt trạng thái `CLOSED` (Đã đóng hoàn toàn), `OPEN` (Đã mở hoàn toàn) hoặc `STOPPED` (Bị kẹt/Dừng lửng).
-- **Chống lỗi khởi động (Boot False-Positive):** Cài đặt biến lưu trữ lùi thời gian (offset 3s) khi mạch vừa cấp nguồn để ngăn chặn việc State Machine hiểu nhầm trạng thái Đóng thành Đang Nâng/Hạ trong 2 giây đầu tiên.
+### 2. Barrier 2
+- **Điều khiển (Relay Output - RO):** `CH4` (Mở), `CH5` (Đóng), `CH6` (Dừng).
+- **Phản hồi (Digital Input - DI):** `DI4` (Đã mở hoàn toàn), `DI3` (Đang nâng/hạ hoặc Đã đóng).
 
-### 3. Nâng cấp Giao thức Mạng & API (Network Layer)
-- **RESTful API mới:** Sửa đổi Endpoint `/api/barrier` để nhận diện tham số `id=1` hoặc `id=2`. Trả về cục diện (JSON) chi tiết của Barrier đang được gọi.
-- **TCP Push Server (Port 8080):** Thay vì bắt phần mềm quản lý bãi xe phải liên tục gọi API (Polling) gây lãng phí băng thông và độ trễ cao, ESP32 giờ đây đóng vai trò là một Push Server. Ngay khi Barrier có thay đổi trạng thái (do app gọi, hoặc do người dùng thao tác tay), ESP32 lập tức chủ động đẩy một bản tin JSON (`barrier_state`, `barrier_cmd`) qua giao thức TCP Raw Socket đến mọi Client đang theo dõi.
-
-### 4. Thiết kế lại Giao diện người dùng (Web UI)
-- Đập đi xây lại toàn bộ giao diện điều khiển nội bộ (HTML/CSS/JS nhúng thẳng trong C++).
-- Giao diện Dark Mode hiện đại, chia thành 2 cột điều khiển độc lập cho 2 Barrier.
-- **Tính năng Interlock an toàn:** Nút bấm MỞ sẽ tự động bị khóa (vô hiệu hóa) nếu trạng thái của Barrier đang là OPEN. Tương tự với nút ĐÓNG.
-- **Xử lý mất kết nối (Fail-safe):** Web UI liên tục ping ngầm. Nếu cáp mạng bị đứt hoặc mất kết nối, màn hình sẽ hiện cảnh báo đỏ và khóa toàn bộ nút bấm để đảm bảo an toàn.
+*(Tất cả các ngõ vào DI được cấu hình kéo điện áp `PULLDOWN` bên trong vi điều khiển nhằm cách ly nhiễu hoàn toàn khi tín hiệu thả nổi).*
 
 ---
 
-## III. KẾT QUẢ ĐẠT ĐƯỢC
-- Code đang hoạt động ổn định trên nhánh `feature/dual-barrier`, không làm ảnh hưởng đến tiến độ của nhánh `main`.
-- Đã giải quyết triệt để lỗi biên dịch thư viện `EthernetServer::begin()` do xung đột với ESP32 Core phiên bản mới.
-- Đã bổ sung tài liệu `API_Integration_Guide.md` hoàn chỉnh để bàn giao cho đội ngũ phần mềm bên trên (Camera AI / Web bãi xe) có thể tiến hành ghép nối.
+## III. KIẾN TRÚC PHẦN MỀM (SOFTWARE ARCHITECTURE)
+Phần mềm Firmware được lập trình bằng C/C++ trên nền tảng ESP32 Arduino Core, áp dụng kiến trúc đa luồng phi đồng bộ (Non-blocking) để đảm bảo không bỏ sót bất kỳ tín hiệu nào. 
+
+### 1. Cỗ máy trạng thái (State Machine)
+Mỗi Barrier sở hữu một State Machine riêng biệt nhằm phân tích tín hiệu điện (0/1) từ chân DI và quy đổi ra trạng thái cổng vật lý (Physical State):
+- `OPEN` (Mở hoàn toàn): Xảy ra khi chân Fully-Open (DI2/DI4) kích hoạt.
+- `OPENING` / `CLOSING` (Đang nâng hạ): Xảy ra khi chân Moving (DI1/DI3) có tín hiệu nhấp nháy chuyển mức (Toggle) liên tục trong khoảng thời gian dưới 2 giây.
+- `CLOSED` (Đóng hoàn toàn): Khi tín hiệu ngừng nhấp nháy quá 2 giây và duy trì ở mức điện áp CAO.
+- `STOPPED` (Dừng lửng/Kẹt): Khi tín hiệu ngừng nhấp nháy quá 2 giây và rớt về mức điện áp THẤP.
+
+### 2. Giao thức Mạng (Network & API)
+Hệ thống sử dụng mạng LAN (Cổng RJ45 kết nối qua chip W5500) đảm bảo tính ổn định tối đa 24/7.
+- **RESTful API (Port 80):** Cung cấp các Endpoint chuẩn hóa (`/api/barrier?id=X&action=Y`) để phần mềm cấp trên có thể gọi lệnh (Open/Close/Stop) bằng JSON.
+- **TCP Push Server (Port 8080):** Kênh giao tiếp thời gian thực (Real-time). Bất cứ khi nào Barrier có chuyển động hoặc nhận lệnh, thiết bị sẽ tự động xuất (Push) bản tin sự kiện (`barrier_state`, `barrier_cmd`) lên mọi phần mềm đang kết nối mà không cần phần mềm phải gọi lệnh hỏi liên tục (Polling).
+
+### 3. Giao diện quản lý nội bộ (Web UI)
+Được tích hợp thẳng vào bộ nhớ ROM của vi điều khiển, người dùng chỉ cần gõ IP của thiết bị vào trình duyệt để truy cập:
+- Thiết kế Dark Mode hiện đại, phản hồi tức thời (Responsive) trên PC và Mobile.
+- Cho phép giám sát trạng thái trực tiếp của 2 Barrier.
+- Tích hợp tính năng an toàn (Interlock): Tự động làm mờ (Disable) nút MỞ khi cổng đang mở, khóa mọi thao tác khi đứt cáp mạng.
+- Tích hợp công cụ chẩn đoán phần cứng (Hardware Diagnostic): Quét địa chỉ I2C, Test từng kênh Relay đơn lẻ, Cấu hình lại IP tĩnh hệ thống.
 
 ---
-*Tài liệu này được biên soạn để báo cáo nghiệm thu kỹ thuật nội bộ dự án.*
+
+## IV. TỔNG KẾT VÀ ỨNG DỤNG THỰC TIỄN
+Hệ thống đã được thiết kế và xây dựng hoàn chỉnh từ phần cứng tới phần mềm. Giải pháp này mang lại những ưu điểm vượt trội:
+- **Tiết kiệm phần cứng:** Một bộ vi điều khiển gánh được 2 cổng Barrier cùng lúc, giảm chi phí triển khai tại các bãi xe có làn vào/ra song song.
+- **Tính chính xác:** Không chỉ gửi lệnh "mù", hệ thống theo dõi và báo cáo chính xác cổng có thực sự được mở/đóng hay không nhờ tích hợp DI Feedback.
+- **Dễ dàng tích hợp:** API chuẩn hóa và TCP Push Server giúp mọi phần mềm quản lý bãi xe (viết bằng C#, Python, Java...) đều có thể cắm vào và điều khiển được ngay lập tức.
