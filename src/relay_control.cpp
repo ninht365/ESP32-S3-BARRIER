@@ -57,15 +57,15 @@ void Relay_Init() {
 
     writeTCA9554(0x00); // Tắt tất cả relay
 
-    // Cấu hình DI Pins
-    pinMode(DI1_PIN, INPUT);
-    pinMode(DI2_PIN, INPUT);
-    pinMode(DI3_PIN, INPUT);
-    pinMode(DI4_PIN, INPUT);
-    pinMode(DI5_PIN, INPUT);
-    pinMode(DI6_PIN, INPUT);
-    pinMode(DI7_PIN, INPUT);
-    pinMode(DI8_PIN, INPUT);
+    // Cấu hình DI Pins (sử dụng PULLDOWN để ngầm định = 0 khi thả nổi)
+    pinMode(DI1_PIN, INPUT_PULLDOWN);
+    pinMode(DI2_PIN, INPUT_PULLDOWN);
+    pinMode(DI3_PIN, INPUT_PULLDOWN);
+    pinMode(DI4_PIN, INPUT_PULLDOWN);
+    pinMode(DI5_PIN, INPUT_PULLDOWN);
+    pinMode(DI6_PIN, INPUT_PULLDOWN);
+    pinMode(DI7_PIN, INPUT_PULLDOWN);
+    pinMode(DI8_PIN, INPUT_PULLDOWN);
 
     // Cấu hình Barrier 1
     barriers[0].relayOpenCh = B1_RELAY_OPEN;
