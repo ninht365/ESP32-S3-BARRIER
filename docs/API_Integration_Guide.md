@@ -118,6 +118,14 @@ Giao thức TCP raw socket giúp phần mềm bãi xe không cần tốn tài ng
 }
 ```
 
+**Bản tin sự kiện (Event Push):**
+Thiết bị sẽ tự động đẩy các bản tin sau khi có sự thay đổi trạng thái hoặc nhận lệnh điều khiển:
+```json
+{"event":"barrier_state","barrier":1,"state":"OPENING","timestamp_ms":123456}
+{"event":"barrier_state","barrier":2,"state":"CLOSED","timestamp_ms":123470}
+{"event":"barrier_cmd","barrier":1,"channel":1,"action":"open","duration_ms":400,"timestamp_ms":123480}
+```
+
 *(Ghi chú: Nếu hệ thống đã đạt giới hạn Client, kết nối sẽ bị từ chối với thông báo: `{"event":"rejected","reason":"max_clients"}`)*
 
 ---
