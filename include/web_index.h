@@ -186,7 +186,7 @@ body{background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
     </div>
   </div>
 
-  <div class="log" id="log-ctrl"><div class="log-entry info">[HỆ THỐNG] Giao diện sẵn sàng.</div></div>
+  <div class="log" id="log-ctrl"><div class="log-entry info">[SYSTEM] Giao dien san sang.</div></div>
 </div>
 
 <!-- ===== TAB 2: HARDWARE TEST ===== -->
@@ -298,15 +298,6 @@ function handleNetworkLoss(msg) {
 }
 
 // =================== STATUS UPDATE ===================
-function translateState(st) {
-  if (st === 'OPEN') return 'ĐÃ MỞ';
-  if (st === 'CLOSED') return 'ĐÃ ĐÓNG';
-  if (st === 'OPENING' || st === 'CLOSING') return 'ĐANG HOẠT ĐỘNG';
-  if (st === 'STOPPED') return 'DỪNG KHẨN CẤP';
-  if (st === 'IDLE') return 'ĐANG CHỜ';
-  return st;
-}
-
 async function updateStatus() {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 1800);
@@ -341,14 +332,14 @@ async function updateStatus() {
     // Barrier 1 state
     const st1 = d.barrier_1_state || 'UNKNOWN';
     const sb1 = document.getElementById('b1-state-badge');
-    sb1.innerText = translateState(st1);
+    sb1.innerText = st1;
     sb1.className = 'state-badge state-'+st1;
     updateButtonStates(1, st1);
 
     // Barrier 2 state
     const st2 = d.barrier_2_state || 'UNKNOWN';
     const sb2 = document.getElementById('b2-state-badge');
-    sb2.innerText = translateState(st2);
+    sb2.innerText = st2;
     sb2.className = 'state-badge state-'+st2;
     updateButtonStates(2, st2);
 
@@ -389,8 +380,7 @@ async function barrierCmd(id, action) {
   updateButtonStates(1, 'IDLE'); // Khóa tạm thời
   updateButtonStates(2, 'IDLE');
 
-  const vnAction = action === 'open' ? 'MỞ' : action === 'close' ? 'ĐÓNG' : 'DỪNG';
-  addLog('Gửi lệnh: B' + id + ' ' + vnAction + '...', 'info');
+  addLog('Gửi lệnh: B' + id + ' ' + action.toUpperCase() + '...', 'info');
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 2000);
 
@@ -407,7 +397,7 @@ async function barrierCmd(id, action) {
     }
     const d = await r.json();
     if (d.result === 'ok') {
-      addLog('Lệnh B' + id + ' ' + vnAction + ' thành công', 'ok');
+      addLog('Lệnh B' + id + ' ' + action.toUpperCase() + ' thành công', 'ok');
     }
   } catch(e) {
     clearTimeout(timeoutId);
