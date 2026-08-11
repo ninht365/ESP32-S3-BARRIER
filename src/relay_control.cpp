@@ -148,16 +148,19 @@ void Relay_Loop() {
 
         if (fullyOpen) {
             newState = BARRIER_OPEN;
-        } else if (movingClosed && timeSinceToggle < 2000) {
-            // Đang nhấp nháy -> Đang nâng hoặc đang hạ
+        } else if (timeSinceToggle < 2000) {
+            // Đang nhấp nháy 0/1 -> Đang nâng hoặc đang hạ
             if (currentRelayState & (1 << (barriers[i].relayCloseCh - 1))) {
                 newState = BARRIER_CLOSING;
             } else {
                 newState = BARRIER_OPENING; 
             }
-        } else if (movingClosed && timeSinceToggle >= 2000) {
-            // Đã đứng yên ở mức HIGH quá 2s -> Đã đóng hoàn toàn
+        } else if (movingClosed) {
+            // Đã đứng yên ở mức 1 quá 2s -> Đã đóng hoàn toàn
             newState = BARRIER_CLOSED;
+        } else {
+            // Đã đứng yên ở mức 0 quá 2s -> Dừng lửng lơ
+            newState = BARRIER_STOPPED;
         }
 
         if (newState != barriers[i].state && newState != BARRIER_UNKNOWN) {
