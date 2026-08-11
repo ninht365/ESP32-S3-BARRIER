@@ -12,7 +12,7 @@ void setup() {
     delay(300);
 
     Serial.println("\n==========================================");
-    Serial.println("  ESP32-S3 BARRIER SYSTEM v2.0           ");
+    Serial.println("  ESP32-S3 BARRIER SYSTEM                    ");
     Serial.println("==========================================");
 
     // 1. Đọc cấu hình IP từ NVS (phải chạy trước Ethernet_Init)
