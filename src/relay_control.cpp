@@ -57,15 +57,15 @@ void Relay_Init() {
 
     writeTCA9554(0x00); // Tắt tất cả relay
 
-    // Cấu hình DI Pins (sử dụng PULLDOWN để ngầm định = 0 khi thả nổi)
-    pinMode(DI1_PIN, INPUT_PULLDOWN);
-    pinMode(DI2_PIN, INPUT_PULLDOWN);
-    pinMode(DI3_PIN, INPUT_PULLDOWN);
-    pinMode(DI4_PIN, INPUT_PULLDOWN);
-    pinMode(DI5_PIN, INPUT_PULLDOWN);
-    pinMode(DI6_PIN, INPUT_PULLDOWN);
-    pinMode(DI7_PIN, INPUT_PULLDOWN);
-    pinMode(DI8_PIN, INPUT_PULLDOWN);
+    // Cấu hình DI Pins (sử dụng PULLUP cho mạch có Optocoupler Active-LOW)
+    pinMode(DI1_PIN, INPUT_PULLUP);
+    pinMode(DI2_PIN, INPUT_PULLUP);
+    pinMode(DI3_PIN, INPUT_PULLUP);
+    pinMode(DI4_PIN, INPUT_PULLUP);
+    pinMode(DI5_PIN, INPUT_PULLUP);
+    pinMode(DI6_PIN, INPUT_PULLUP);
+    pinMode(DI7_PIN, INPUT_PULLUP);
+    pinMode(DI8_PIN, INPUT_PULLUP);
 
     // Cấu hình Barrier 1
     barriers[0].relayOpenCh = B1_RELAY_OPEN;
@@ -73,7 +73,7 @@ void Relay_Init() {
     barriers[0].relayStopCh = B1_RELAY_STOP;
     barriers[0].diFullyOpenPin = DI2_PIN;
     barriers[0].diMovingClosedPin = DI1_PIN;
-    barriers[0].lastDIMovingState = digitalRead(DI1_PIN);
+    barriers[0].lastDIMovingState = (digitalRead(DI1_PIN) == LOW);
     barriers[0].lastDIToggleTime = millis() - 3000; // Giả lập đã đứng yên 3s
 
     // Cấu hình Barrier 2
@@ -82,7 +82,7 @@ void Relay_Init() {
     barriers[1].relayStopCh = B2_RELAY_STOP;
     barriers[1].diFullyOpenPin = DI4_PIN;
     barriers[1].diMovingClosedPin = DI3_PIN;
-    barriers[1].lastDIMovingState = digitalRead(DI3_PIN);
+    barriers[1].lastDIMovingState = (digitalRead(DI3_PIN) == LOW);
     barriers[1].lastDIToggleTime = millis() - 3000; // Giả lập đã đứng yên 3s
 
     Serial.printf("[RELAY] Khoi tao xong 2 Barrier.\n");
@@ -135,8 +135,8 @@ void Relay_Loop() {
 
     // 2. Đọc trạng thái DI cho 2 Barrier (Chỉ cập nhật nếu có tín hiệu phần cứng DI kích hoạt)
     for (int i = 0; i < 2; i++) {
-        bool fullyOpen = digitalRead(barriers[i].diFullyOpenPin);
-        bool movingClosed = digitalRead(barriers[i].diMovingClosedPin);
+        bool fullyOpen = (digitalRead(barriers[i].diFullyOpenPin) == LOW);
+        bool movingClosed = (digitalRead(barriers[i].diMovingClosedPin) == LOW);
 
         if (movingClosed != barriers[i].lastDIMovingState) {
             barriers[i].lastDIMovingState = movingClosed;
