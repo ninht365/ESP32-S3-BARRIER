@@ -359,13 +359,13 @@ async function updateStatus() {
       card.className = 'ch-card' + (on?' active':'');
     }
 
-    // Config tab: pre-fill IP fields if empty
-    if (d.ip && !document.getElementById('cfg-ip').value) {
-      document.getElementById('cfg-ip').value = d.ip;
-    }
-    if (d.gateway && !document.getElementById('cfg-gw').value) {
-      document.getElementById('cfg-gw').value = d.gateway;
-    }
+    // Config tab: pre-fill IP, GW, Subnet fields if not edited yet
+    const elIp = document.getElementById('cfg-ip');
+    const elGw = document.getElementById('cfg-gw');
+    const elSn = document.getElementById('cfg-sn');
+    if (d.ip && !elIp.dataset.loaded)     { elIp.value = d.ip; elIp.dataset.loaded = '1'; validateIPField('cfg-ip','err-ip'); }
+    if (d.gateway && !elGw.dataset.loaded){ elGw.value = d.gateway; elGw.dataset.loaded = '1'; validateIPField('cfg-gw','err-gw'); }
+    if (d.subnet && !elSn.dataset.loaded) { elSn.value = d.subnet; elSn.dataset.loaded = '1'; validateIPField('cfg-sn','err-sn'); }
   } catch(e) {
     clearTimeout(timeoutId);
     handleNetworkLoss(e.name === 'AbortError' ? 'Timeout kết nối' : 'Không phản hồi');
@@ -479,12 +479,21 @@ function isValidIP(str) {
   });
 }
 
+// Kiểm tra Subnet Mask hợp lệ (các bit 1 phải liên tục từ MSB)
+function isValidSubnet(str) {
+  if (!isValidIP(str)) return false;
+  const parts = str.split('.').map(Number);
+  const mask32 = ((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3];
+  const inverted = (~mask32) >>> 0;
+  return (inverted & (inverted + 1)) === 0;
+}
+
 // Validate 1 trường và hiện/ẩn thông báo lỗi
 function validateIPField(inputId, errId) {
   const el  = document.getElementById(inputId);
   const err = document.getElementById(errId);
   if (!el || !err) return true;
-  const ok = isValidIP(el.value.trim());
+  const ok = (inputId === 'cfg-sn') ? isValidSubnet(el.value.trim()) : isValidIP(el.value.trim());
   el.classList.toggle('valid',   ok);
   el.classList.toggle('invalid', !ok && el.value.trim() !== '');
   err.classList.toggle('show',   !ok && el.value.trim() !== '');
@@ -498,7 +507,7 @@ function updateSaveBtn() {
   if (!btn) return;
   const allOk = isValidIP(document.getElementById('cfg-ip').value.trim())
              && isValidIP(document.getElementById('cfg-gw').value.trim())
-             && isValidIP(document.getElementById('cfg-sn').value.trim());
+             && isValidSubnet(document.getElementById('cfg-sn').value.trim());
   btn.disabled = !allOk;
 }
 

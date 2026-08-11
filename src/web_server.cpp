@@ -164,6 +164,7 @@ void WebServer_Loop() {
                 String jsonResp = "{\"status\":\"online\""
                     + String(",\"ip\":\"") + Ethernet.localIP().toString() + "\""
                     + ",\"gateway\":\"" + Config_GetGateway().toString() + "\""
+                    + ",\"subnet\":\""  + Config_GetSubnet().toString() + "\""
                     + ",\"uptime_s\":"  + String(uptimeSec)
                     + ",\"eth_link\":"  + (ethLink ? "true" : "false")
                     + ",\"tcp_clients\":" + String(TcpPush_ClientCount())
