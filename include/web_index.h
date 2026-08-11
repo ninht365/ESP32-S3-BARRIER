@@ -279,9 +279,9 @@ function updateButtonStates(id, st) {
   const btnStop  = document.getElementById('b'+id+'-btn-stop');
   const btnClose = document.getElementById('b'+id+'-btn-close');
 
-  if (btnOpen)  btnOpen.disabled  = lockAll || (st === 'OPENING') || (st === 'OPEN');
-  if (btnStop)  btnStop.disabled  = lockAll; // Stop can always be pressed unless network is lost
-  if (btnClose) btnClose.disabled = lockAll || (st === 'CLOSING') || (st === 'CLOSED');
+  if (btnOpen)  btnOpen.disabled  = lockAll || (st === 'OPENING') || (st === 'CLOSING') || (st === 'OPEN');
+  if (btnClose) btnClose.disabled = lockAll || (st === 'CLOSING') || (st === 'OPENING') || (st === 'CLOSED');
+  if (btnStop)  btnStop.disabled  = lockAll || (st === 'OPEN') || (st === 'CLOSED') || (st === 'STOPPED') || (st === 'IDLE');
 }
 
 function handleNetworkLoss(msg) {

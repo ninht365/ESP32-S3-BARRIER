@@ -158,7 +158,7 @@ void Relay_Loop() {
             newState = BARRIER_OPEN;
         } else if (timeSinceToggle < 2000) {
             // Đang nhấp nháy 0/1 -> Đang nâng hoặc đang hạ
-            if (currentRelayState & (1 << (barriers[i].relayCloseCh - 1))) {
+            if (barriers[i].state == BARRIER_OPEN || barriers[i].state == BARRIER_CLOSING) {
                 newState = BARRIER_CLOSING;
             } else {
                 newState = BARRIER_OPENING; 
