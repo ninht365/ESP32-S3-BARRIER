@@ -81,6 +81,10 @@ Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router c
 
 Hệ thống ESP32 đọc tín hiệu phản hồi từ các chân ngõ vào số (DI) kết nối với mạch CAME ZL38 (chân 5 và chân E) để xác định trạng thái vận hành của Barrier theo bảng logic quy chuẩn sau:
 
+<p align="center">
+  <em>Bảng 1: Bảng logic nhận diện trạng thái.</em>
+</p>
+
 | Trạng thái hệ thống (`barrier_state`) | DI2 (Phản hồi Mở) | DI1 (Phản hồi Chạy/Đóng) | Thời gian & Trạng thái tín hiệu DI1 | Mô tả hành vi vận hành thực tế |
 |:---|:---:|:---:|:---:|:---|
 | **`OPEN`** *(Mở hoàn toàn)* | **`1`** | *N/A* | *N/A* | Cần Barrier đã nâng hết cỡ lên đỉnh. Cảm biến ngắt hành trình báo mở. |
