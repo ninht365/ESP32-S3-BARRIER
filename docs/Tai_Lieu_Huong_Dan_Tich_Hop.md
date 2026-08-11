@@ -85,7 +85,7 @@ Hệ thống ESP32 đọc tín hiệu phản hồi từ các chân ngõ vào s�
 
 | Trạng thái hệ thống (`barrier_state`) | DI2 (Phản hồi Mở) | DI1 (Phản hồi Chạy/Đóng) | Thời gian & Trạng thái tín hiệu DI1 | Mô tả hành vi vận hành thực tế |
 |:---|:---:|:---:|:---:|:---|
-| **`OPEN`** *(Mở hoàn toàn)* | **`1`** | *NA* | *NA* | Cần Barrier đã nâng hết cỡ lên đỉnh. Cảm biến ngắt hành trình báo mở. |
+| **`OPEN`** *(Mở hoàn toàn)* | **`1`** | *N/A* | *N/A* | Cần Barrier đã nâng hết cỡ lên đỉnh. Cảm biến ngắt hành trình báo mở. |
 | **`OPENING` / `CLOSING`** *(Đang nâng / Đang hạ)* | **`0`** | `0/1` | Đảo trạng thái nhấp nháy liên tục `< 2s` | Motor đang quay di chuyển cần barrier (hướng nâng/hạ xác định theo lệnh vừa phát). |
 | **`CLOSED`** *(Đóng hoàn toàn)* | **`0`** | **`1`** | Giữ nguyên mức `1` liên tục `≥ 2s` (không đảo) | Cần Barrier đã hạ xuống hết cỡ chạm đất. Tín hiệu giữ nguyên liên tục `1`. |
 | **`STOPPED`** *(Dừng ở vị trí lửng)* | **`0`** | **`0`** | Giữ nguyên mức `0` liên tục `≥ 2s` (không đảo) | Barrier bị dừng giữa chừng (do bấm nút STOP khẩn cấp hoặc gặp vật cản/cảm biến an toàn). |
