@@ -156,22 +156,19 @@ void Relay_Loop() {
         if (fullyOpen) {
             // 1. Mở hoàn toàn: DI2 = 1 (DI1 không quan tâm giá trị)
             newState = BARRIER_OPEN;
-        } else if (movingClosed && timeSinceToggle < 2000) {
-            // 2. Đang nâng hạ: DI2 = 0; DI1 đảo trạng thái liên tục (0/1) trong vòng 2s
-            if (barriers[i].lastAction == ACTION_CLOSE || barriers[i].state == BARRIER_CLOSING) {
+        } else if (timeSinceToggle < 2000) {
+            // Đang nhấp nháy 0/1 -> Đang nâng hoặc đang hạ
+            if (currentRelayState & (1 << (barriers[i].relayCloseCh - 1))) {
                 newState = BARRIER_CLOSING;
             } else {
                 newState = BARRIER_OPENING; 
             }
-        } else if (movingClosed && timeSinceToggle >= 2000) {
-            // 3. Đóng hoàn toàn: DI2 = 0; DI1 = 1 và trong vòng 2s không có sự đảo trạng thái
+        } else if (movingClosed) {
+            // Đã đứng yên ở mức 1 quá 2s -> Đã đóng hoàn toàn
             newState = BARRIER_CLOSED;
-        } else if (!movingClosed && timeSinceToggle >= 2000) {
-            // 4. Dừng lửng: DI2 = 0; DI1 = 0 từ giây thứ 2 đổ đi (timeSinceToggle >= 2000)
-            if (barriers[i].state == BARRIER_OPENING || barriers[i].state == BARRIER_CLOSING || barriers[i].diActive) {
-                newState = BARRIER_STOPPED;
-                barriers[i].diActive = false;
-            }
+        } else {
+            // Đã đứng yên ở mức 0 quá 2s -> Dừng lửng lơ
+            newState = BARRIER_STOPPED;
         }
 
         if (newState != barriers[i].state && newState != BARRIER_UNKNOWN) {
