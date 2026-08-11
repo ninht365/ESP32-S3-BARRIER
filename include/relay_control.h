@@ -38,6 +38,7 @@ typedef enum {
     BARRIER_CMD_BUSY      = 1,  // Đang bận, yêu cầu bị từ chối
     BARRIER_CMD_PREEMPTED = 2,  // Lệnh dừng đã chen ngang thành công
     BARRIER_CMD_ERR_ID    = 3,  // Sai ID barrier (chỉ hỗ trợ 1 hoặc 2)
+    BARRIER_CMD_IGNORED   = 4,  // Bỏ qua do phần mềm khóa (Software Interlock)
 } BarrierResult;
 
 // ==========================================

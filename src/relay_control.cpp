@@ -197,14 +197,26 @@ BarrierResult Relay_BarrierCmd(uint8_t barrier_id, BarrierAction action, uint16_
     const char* actionName = "";
 
     if (action == ACTION_OPEN) {
+        if (barriers[idx].state == BARRIER_OPEN || barriers[idx].state == BARRIER_OPENING) {
+            Serial.printf("[BARRIER %d] Bo qua lenh MO vi dang/da mo.\n", barrier_id);
+            return BARRIER_CMD_IGNORED;
+        }
         ch = barriers[idx].relayOpenCh;
         actionName = "open";
         barriers[idx].state = BARRIER_OPENING;
     } else if (action == ACTION_CLOSE) {
+        if (barriers[idx].state == BARRIER_CLOSED || barriers[idx].state == BARRIER_CLOSING) {
+            Serial.printf("[BARRIER %d] Bo qua lenh DONG vi dang/da dong.\n", barrier_id);
+            return BARRIER_CMD_IGNORED;
+        }
         ch = barriers[idx].relayCloseCh;
         actionName = "close";
         barriers[idx].state = BARRIER_CLOSING;
     } else if (action == ACTION_STOP) {
+        if (barriers[idx].state == BARRIER_STOPPED) {
+            Serial.printf("[BARRIER %d] Bo qua lenh DUNG vi dang o trang thai dung.\n", barrier_id);
+            return BARRIER_CMD_IGNORED;
+        }
         ch = barriers[idx].relayStopCh;
         actionName = "stop";
         barriers[idx].state = BARRIER_STOPPED;

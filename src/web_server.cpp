@@ -137,6 +137,7 @@ void WebServer_Loop() {
                         BarrierResult res = Relay_BarrierCmd(barrier_id, act, (uint16_t)duration);
                         String resStr = (res == BARRIER_CMD_OK)        ? "ok"
                                       : (res == BARRIER_CMD_PREEMPTED) ? "preempted"
+                                      : (res == BARRIER_CMD_IGNORED)   ? "ignored"
                                       :                                  "busy";
                         String jsonResp = "{\"result\":\"" + resStr
                                         + "\",\"barrier\":" + String(barrier_id)
