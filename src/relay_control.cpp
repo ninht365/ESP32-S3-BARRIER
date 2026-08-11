@@ -89,7 +89,7 @@ void Relay_Init() {
 }
 
 // ==========================================
-// ĐIỀU KHIỂN KÊNH NGUYÊN THUỶ
+// ĐIỀU KHIỂN KÊNH
 // ==========================================
 void Relay_On(uint8_t ch) {
     if (ch < 1 || ch > 8) return;
