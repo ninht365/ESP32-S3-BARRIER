@@ -77,6 +77,25 @@ Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router c
 
 ---
 
+## 2. BẢNG LOGIC VẬN HÀNH & NHẬN DIỆN TRẠNG THÁI BARRIER
+
+Hệ thống ESP32 đọc tín hiệu phản hồi từ các chân ngõ vào số (DI) kết nối với mạch CAME ZL38 (chân 5 và chân E) để xác định trạng thái vận hành của Barrier theo bảng logic quy chuẩn sau:
+
+### 2.1. Bảng Logic Nhận Diện Trạng Thái (`barrier_state`)
+
+| DI2 (Phản hồi Mở) | DI1 (Phản hồi Chạy/Đóng) | Thời gian & Trạng thái tín hiệu DI1 | Trạng thái hệ thống (`barrier_state`) | Mô tả hành vi vận hành thực tế |
+|:---:|:---:|:---:|:---:|---|
+| **`1`** | *(Không quan tâm)* | *(Bất kỳ)* | **`OPEN`** *(Mở hoàn toàn)* | Cần Barrier đã nâng hết cỡ lên đỉnh. Cảm biến ngắt hành trình báo mở. |
+| **`0`** | `0/1` | Đảo trạng thái nhấp nháy liên tục `< 2s` | **`OPENING` / `CLOSING`** *(Đang nâng / Đang hạ)* | Motor đang quay di chuyển cần barrier (hướng nâng/hạ xác định theo lệnh vừa phát). |
+| **`0`** | **`1`** | Giữ nguyên mức `1` liên tục `≥ 2s` (không đảo) | **`CLOSED`** *(Đóng hoàn toàn)* | Cần Barrier đã hạ xuống hết cỡ chạm đất. Tín hiệu giữ nguyên liên tục `1`. |
+| **`0`** | **`0`** | Giữ nguyên mức `0` liên tục `≥ 2s` (không đảo) | **`STOPPED`** *(Dừng ở vị trí lửng)* | Barrier bị dừng giữa chừng (do bấm nút STOP khẩn cấp hoặc gặp vật cản/cảm biến an toàn). |
+
+> 📌 **Ghi chú kỹ thuật về mức logic tín hiệu:**  
+> - **Mức `1` (Active):** Có điện áp `+24V` xuất từ ZL38 vào chân DI của ESP32 (Optocoupler cách ly dẫn ➔ GPIO reading = `LOW`).  
+> - **Mức `0` (Inactive):** Không có điện áp `0V` / thả nổi (Optocoupler ngắt ➔ GPIO reading = `HIGH`).
+
+---
+
 ## 3. HƯỚNG DẪN SỬ DỤNG GIAO DIỆN WEB UI (3 TAB)
 
 
@@ -198,18 +217,21 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 ```json
 {
   "status": "online",
-  "ip": "192.168.1.200",
-  "gateway": "192.168.1.1",
+  "ip": "10.2.22.12",
+  "gateway": "10.2.22.1",
+  "subnet": "255.255.255.0",
   "uptime_s": 3600,
   "eth_link": true,
   "tcp_clients": 1,
-  "relays_byte": 1,
+  "relays_byte": 0,
   "relays": {
-    "CH1": true,  "CH2": false, "CH3": false, "CH4": false,
+    "CH1": false, "CH2": false, "CH3": false, "CH4": false,
     "CH5": false, "CH6": false, "CH7": false, "CH8": false
   },
-  "barrier_1_state": "OPENING",
-  "barrier_2_state": "IDLE"
+  "di1": 0,
+  "di2": 1,
+  "barrier_1_state": "OPEN",
+  "barrier_2_state": "CLOSED"
 }
 ```
 
