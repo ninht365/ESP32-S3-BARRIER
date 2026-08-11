@@ -29,10 +29,21 @@ void Ethernet_Init() {
         Serial.println("[ETH] CHIP W5500 PHAT HIEN OK!");
     }
 
-    if (Ethernet.linkStatus() == LinkOFF) {
-        Serial.println("[ETH] CANH BAO: Chua cam cap mang!");
-    } else if (Ethernet.linkStatus() == LinkON) {
-        Serial.println("[ETH] Cap mang da ket noi!");
+    // Chờ tối đa 2.5s để chip W5500 hoàn tất thương lượng tín hiệu lớp vật lý (Auto-negotiation)
+    unsigned long startCheck = millis();
+    bool linkOk = false;
+    while (millis() - startCheck < 2500) {
+        if (Ethernet.linkStatus() == LinkON) {
+            linkOk = true;
+            break;
+        }
+        delay(100);
+    }
+
+    if (linkOk) {
+        Serial.println("[ETH] Cap mang da ket noi (Link ON)!");
+    } else {
+        Serial.println("[ETH] CANH BAO: Chua cam cap mang (Link OFF)!");
     }
 
     Serial.print("[ETH] IP Tinh: ");

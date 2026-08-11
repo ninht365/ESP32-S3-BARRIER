@@ -94,10 +94,15 @@ body{background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
 .cfg-card h3{font-size:.9rem;color:#60a5fa;margin-bottom:14px}
 .form-row{margin-bottom:12px}
 .form-row label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
-.form-row input{width:100%;padding:9px 12px;background:#0f172a;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.85rem;outline:none;transition:border .2s}
+.form-row input{width:100%;padding:9px 12px;background:#0f172a;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.85rem;outline:none;transition:border .2s;font-family:monospace;letter-spacing:.04em}
 .form-row input:focus{border-color:#3b82f6}
+.form-row input.valid  {border-color:#10b981!important;box-shadow:0 0 0 2px rgba(16,185,129,.15)}
+.form-row input.invalid{border-color:#ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.15)}
+.field-err{display:none;font-size:.72rem;color:#f87171;margin-top:3px;padding-left:2px}
+.field-err.show{display:block}
 .save-btn{width:100%;padding:12px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);border:none;border-radius:8px;color:#fff;font-size:.95rem;font-weight:bold;cursor:pointer;transition:all .2s}
-.save-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.save-btn:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+.save-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .redirect-box{display:none;background:#065f46;border-radius:8px;padding:12px;text-align:center;font-size:.9rem;color:#a7f3d0;margin-top:10px}
 
 /* Disconnection Warning Banner */
@@ -210,17 +215,23 @@ body{background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
     <h3>🌐 Cấu hình địa chỉ mạng</h3>
     <div class="form-row">
       <label>Địa chỉ IP (ESP32)</label>
-      <input type="text" id="cfg-ip" placeholder="192.168.1.200" pattern="\d+\.\d+\.\d+\.\d+">
+      <input type="text" id="cfg-ip" placeholder="192.168.1.200" maxlength="15"
+             oninput="filterIP(this)" onblur="validateIPField('cfg-ip','err-ip')">
+      <div class="field-err" id="err-ip">⚠ Địa chỉ IP không hợp lệ (Giá trị từ 0-255)</div>
     </div>
     <div class="form-row">
       <label>Default Gateway</label>
-      <input type="text" id="cfg-gw" placeholder="192.168.1.1">
+      <input type="text" id="cfg-gw" placeholder="192.168.1.1" maxlength="15"
+             oninput="filterIP(this)" onblur="validateIPField('cfg-gw','err-gw')">
+      <div class="field-err" id="err-gw">⚠ Gateway không hợp lệ (VD: 192.168.1.1)</div>
     </div>
     <div class="form-row">
       <label>Subnet Mask</label>
-      <input type="text" id="cfg-sn" placeholder="255.255.255.0" value="255.255.255.0">
+      <input type="text" id="cfg-sn" placeholder="255.255.255.0" maxlength="15" value="255.255.255.0"
+             oninput="filterIP(this)" onblur="validateIPField('cfg-sn','err-sn')">
+      <div class="field-err" id="err-sn">⚠ Subnet Mask không hợp lệ (VD: 255.255.255.0)</div>
     </div>
-    <button class="save-btn" onclick="saveConfig()">💾 Lưu & Khởi động lại</button>
+    <button class="save-btn" id="save-cfg-btn" onclick="saveConfig()">💾 Lưu &amp; Khởi động lại</button>
     <div class="redirect-box" id="redirect-box">
       ✅ Đã lưu! Chuyển hướng tới <strong id="new-ip-txt"></strong> sau <span id="countdown">5</span>s...
     </div>
@@ -443,11 +454,67 @@ async function doI2CScan() {
 }
 
 // =================== CONFIG TAB ===================
+
+// Chỉ cho phép nhập số (0-9) và dấu chấm (.)
+function filterIP(el) {
+  const pos = el.selectionStart;
+  const before = el.value;
+  el.value = before.replace(/[^0-9.]/g, '');
+  // Phục hồi vị trí con trỏ nếu có ký tự bị xóa
+  if (el.value !== before) {
+    el.selectionStart = el.selectionEnd = Math.max(0, pos - (before.length - el.value.length));
+  }
+  validateIPField(el.id, 'err-' + el.id.replace('cfg-',''));
+}
+
+// Kiểm tra định dạng IP hợp lệ: 4 octet, mỗi octet 0-255
+function isValidIP(str) {
+  if (!str) return false;
+  const parts = str.split('.');
+  if (parts.length !== 4) return false;
+  return parts.every(p => {
+    if (p === '' || p.length > 3) return false;
+    const n = Number(p);
+    return Number.isInteger(n) && n >= 0 && n <= 255;
+  });
+}
+
+// Validate 1 trường và hiện/ẩn thông báo lỗi
+function validateIPField(inputId, errId) {
+  const el  = document.getElementById(inputId);
+  const err = document.getElementById(errId);
+  if (!el || !err) return true;
+  const ok = isValidIP(el.value.trim());
+  el.classList.toggle('valid',   ok);
+  el.classList.toggle('invalid', !ok && el.value.trim() !== '');
+  err.classList.toggle('show',   !ok && el.value.trim() !== '');
+  updateSaveBtn();
+  return ok;
+}
+
+// Cập nhật trạng thái nút Lưu (chỉ bật khi cả 3 trường hợp lệ)
+function updateSaveBtn() {
+  const btn = document.getElementById('save-cfg-btn');
+  if (!btn) return;
+  const allOk = isValidIP(document.getElementById('cfg-ip').value.trim())
+             && isValidIP(document.getElementById('cfg-gw').value.trim())
+             && isValidIP(document.getElementById('cfg-sn').value.trim());
+  btn.disabled = !allOk;
+}
+
 async function saveConfig() {
+  // Validate lại toàn bộ trước khi gửi
+  const okIP = validateIPField('cfg-ip', 'err-ip');
+  const okGW = validateIPField('cfg-gw', 'err-gw');
+  const okSN = validateIPField('cfg-sn', 'err-sn');
+  if (!okIP || !okGW || !okSN) {
+    addLog('⚠ Vui lòng kiểm tra lại địa chỉ IP trước khi lưu!', 'warn');
+    return;
+  }
+
   const ip = document.getElementById('cfg-ip').value.trim();
   const gw = document.getElementById('cfg-gw').value.trim();
   const sn = document.getElementById('cfg-sn').value.trim();
-  if (!ip || !gw || !sn) { alert('Vui lòng điền đầy đủ thông tin!'); return; }
 
   try {
     const r = await fetch('/api/config/setip?ip='+encodeURIComponent(ip)+'&gw='+encodeURIComponent(gw)+'&sn='+encodeURIComponent(sn));

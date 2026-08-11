@@ -7,15 +7,20 @@ static IPAddress storedSN(255, 255, 255, 0);
 
 void Config_Init() {
     prefs.begin("netcfg", false); // read-write
-    prefs.clear(); // Xoa cac IP cu trong NVS
-    prefs.putString("ip", "192.168.1.200");
-    prefs.putString("gw", "192.168.1.1");
-    prefs.putString("sn", "255.255.255.0");
+
+    String ip = prefs.getString("ip", "192.168.1.200");
+    String gw = prefs.getString("gw", "192.168.1.1");
+    String sn = prefs.getString("sn", "255.255.255.0");
     prefs.end();
 
-    storedIP = IPAddress(192, 168, 1, 200);
-    storedGW = IPAddress(192, 168, 1, 1);
-    storedSN = IPAddress(255, 255, 255, 0);
+    if (!storedIP.fromString(ip)) storedIP = IPAddress(192, 168, 1, 200);
+    if (!storedGW.fromString(gw)) storedGW = IPAddress(192, 168, 1,   1);
+    if (!storedSN.fromString(sn)) storedSN = IPAddress(255, 255, 255, 0);
+
+    Serial.printf("[CONFIG] Doc NVS: IP=%s GW=%s SN=%s\n",
+                  storedIP.toString().c_str(),
+                  storedGW.toString().c_str(),
+                  storedSN.toString().c_str());
 }
 
 IPAddress Config_GetIP()      { return storedIP; }
