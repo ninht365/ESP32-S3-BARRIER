@@ -77,11 +77,11 @@ Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router c
 
 ---
 
-## 2. BẢNG LOGIC VẬN HÀNH & NHẬN DIỆN TRẠNG THÁI BARRIER
+## 3. BẢNG LOGIC VẬN HÀNH & NHẬN DIỆN TRẠNG THÁI BARRIER
 
 Hệ thống ESP32 đọc tín hiệu phản hồi từ các chân ngõ vào số (DI) kết nối với mạch CAME ZL38 (chân 5 và chân E) để xác định trạng thái vận hành của Barrier theo bảng logic quy chuẩn sau:
 
-### 2.1. Bảng Logic Nhận Diện Trạng Thái (`barrier_state`)
+### 3.1. Bảng Logic Nhận Diện Trạng Thái (`barrier_state`)
 
 | Trạng thái hệ thống (`barrier_state`) | DI2 (Phản hồi Mở) | DI1 (Phản hồi Chạy/Đóng) | Thời gian & Trạng thái tín hiệu DI1 | Mô tả hành vi vận hành thực tế |
 |:---|:---:|:---:|:---:|:---|
@@ -96,10 +96,10 @@ Hệ thống ESP32 đọc tín hiệu phản hồi từ các chân ngõ vào s�
 
 ---
 
-## 3. HƯỚNG DẪN SỬ DỤNG GIAO DIỆN WEB UI (3 TAB)
+## 4. HƯỚNG DẪN SỬ DỤNG GIAO DIỆN WEB UI (3 TAB)
 
 
-### 3.1. Tab 1: 🚧 Điều khiển Barrier (Barrier Control)
+### 4.1. Tab 1: 🚧 Điều khiển Barrier (Barrier Control)
 
 Tab chuyên dụng cho thao tác vận hành hàng ngày:
 
@@ -123,7 +123,7 @@ Tab chuyên dụng cho thao tác vận hành hàng ngày:
   - **Cảnh báo đứt mạng:** Nếu dây mạng bị rút hoặc đứt kết nối, một Banner đỏ rực sẽ hiện lên: `⚠️ MẤT KẾT NỐI MẠNG — ĐÃ KHÓA TOÀN BỘ THAO TÁC`, đảm bảo an toàn tuyệt đối.
 - **Khung Nhật ký (Log Box):** Hiển thị chi tiết 40 sự kiện gần nhất (Thời gian, tên lệnh, phản hồi thành công/thất bại).
 
-### 3.2. Tab 2: 🔧 Kiểm tra Phần cứng (Hardware Test)
+### 4.2. Tab 2: 🔧 Kiểm tra Phần cứng (Hardware Test)
 
 Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đường truyền I2C:
 
@@ -140,7 +140,7 @@ Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đườ
    - **TẮT (OFF):** Tắt rơ-le.
    - Đèn LED màu xanh chỉ thị trạng thái thực tế của từng rơ-le theo thời gian thực.
 
-### 3.3. Tab 3: ⚙️ Cấu hình Mạng & Hệ thống (Network Config)
+### 4.3. Tab 3: ⚙️ Cấu hình Mạng & Hệ thống (Network Config)
 
 Tab cho phép thay đổi thông số mạng tĩnh và lưu cố định vào bộ nhớ NVS (không bị mất khi tắt điện):
 
@@ -162,12 +162,12 @@ Tab cho phép thay đổi thông số mạng tĩnh và lưu cố định vào b�
 
 ---
 
-## 4. TÀI LIỆU TÍCH HỢP REST API (DÀNH CHO LẬP TRÌNH VIÊN)
+## 5. TÀI LIỆU TÍCH HỢP REST API (DÀNH CHO LẬP TRÌNH VIÊN)
 
 Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh điều khiển bằng HTTP GET.
 *(Ví dụ IP thiết bị: `192.168.1.200`)*
 
-### 4.1. Điều khiển Barrier (State Machine & Interlock)
+### 5.1. Điều khiển Barrier (State Machine & Interlock)
 *   **Endpoint:** `GET /api/barrier`
 *   **Tham số (Query Parameters):**
     *   `id` *(Tùy chọn)*: ID Barrier (`1` hoặc `2`, mặc định `1`).
@@ -210,7 +210,7 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 }
 ```
 
-### 4.2. Kiểm tra Trạng thái Toàn hệ thống
+### 5.2. Kiểm tra Trạng thái Toàn hệ thống
 *   **Endpoint:** `GET /api/status`
 
 **Phản hồi mẫu (JSON):**
@@ -235,7 +235,7 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 }
 ```
 
-### 4.3. Điều khiển Kênh Relay Thô (Raw Relay Control)
+### 5.3. Điều khiển Kênh Relay Thô (Raw Relay Control)
 *   **Endpoint:** `GET /api/relay`
 *   **Tham số:** `ch` (`1`–`8` hoặc `all`), `action` (`pulse` | `on` | `off`), `duration` (ms).
 
@@ -243,12 +243,12 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 `GET http://192.168.1.200/api/relay?ch=3&action=on`
 
 
-### 4.4. Đổi IP qua API
+### 5.4. Đổi IP qua API
 *   **Endpoint:** `GET /api/config/setip?ip=192.168.1.150&gw=192.168.1.1&sn=255.255.255.0`
 
 ---
 
-## 5. TÀI LIỆU TÍCH HỢP TCP PUSH SERVER (PORT 8080 - REALTIME)
+## 6. TÀI LIỆU TÍCH HỢP TCP PUSH SERVER (PORT 8080 - REALTIME)
 
 Giúp phần mềm bãi xe không cần tốn tài nguyên gọi API (polling) liên tục.
 
@@ -256,7 +256,7 @@ Giúp phần mềm bãi xe không cần tốn tài nguyên gọi API (polling) l
 - **Tối đa client:** 4 kết nối đồng thời.
 - **Định dạng dữ liệu:** JSON (mỗi sự kiện nằm trên 1 dòng kết thúc bằng `\r\n`).
 
-### 5.1. Hướng dẫn Cấu hình Phần mềm PuTTY để Test Nhận Bản tin Realtime
+### 6.1. Hướng dẫn Cấu hình Phần mềm PuTTY để Test Nhận Bản tin Realtime
 
 Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin sự kiện TCP Push (Port 8080) từ ESP32 mà không cần viết code phần mềm:
 
@@ -283,12 +283,12 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
   <em>Hình 5: Nhận bản tin sự kiện JSON thời gian thực trên PuTTY.</em>
 </p>
 
-### 5.2. Bản tin khi vừa kết nối thành công (Welcome message):
+### 6.2. Bản tin khi vừa kết nối thành công (Welcome message):
 ```json
 {"event":"connected","ip":"192.168.1.200","port":8080,"version":"1.0"}
 ```
 
-### 5.3. Bản tin Sự kiện đẩy về Thời gian thực (Event Push):
+### 6.3. Bản tin Sự kiện đẩy về Thời gian thực (Event Push):
 ```json
 {"event":"barrier_cmd","barrier":1,"channel":1,"action":"open","duration_ms":400,"timestamp_ms":12345}
 {"event":"barrier_state","barrier":1,"state":"OPENING","timestamp_ms":12345}
@@ -299,7 +299,7 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
 
 ---
 
-## 6. HƯỚNG DẪN KHẮC PHỤC SỰ CỐ (TROUBLESHOOTING)
+## 7. HƯỚNG DẪN KHẮC PHỤC SỰ CỐ (TROUBLESHOOTING)
 
 | Triệu chứng | Nguyên nhân có thể | Cách khắc phục |
 |---|---|---|
