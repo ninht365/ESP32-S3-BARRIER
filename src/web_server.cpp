@@ -167,7 +167,7 @@ void WebServer_Loop() {
                     + ",\"subnet\":\""  + Config_GetSubnet().toString() + "\""
                     + ",\"uptime_s\":"  + String(uptimeSec)
                     + ",\"eth_link\":"  + (ethLink ? "true" : "false")
-                    + ",\"tcp_clients\":" + String(TcpPush_ClientCount())
+                    + ",\"tcp_clien     ts\":" + String(TcpPush_ClientCount())
                     + ",\"relays_byte\":"+ String(st)
                     + ",\"relays\":"    + chJson
                     + ",\"di1\":"       + String(digitalRead(DI1_PIN) == LOW ? 1 : 0)
