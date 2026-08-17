@@ -170,6 +170,8 @@ void WebServer_Loop() {
                     + ",\"tcp_clients\":" + String(TcpPush_ClientCount())
                     + ",\"relays_byte\":"+ String(st)
                     + ",\"relays\":"    + chJson
+                    + ",\"di1\":"       + String(digitalRead(DI1_PIN) == LOW ? 1 : 0)
+                    + ",\"di2\":"       + String(digitalRead(DI2_PIN) == LOW ? 1 : 0)
                     + ",\"barrier_1_state\":\"" + String(Relay_BarrierStateName(Relay_GetBarrierState(1))) + "\""
                     + ",\"barrier_2_state\":\"" + String(Relay_BarrierStateName(Relay_GetBarrierState(2))) + "\""
                     + "}";
