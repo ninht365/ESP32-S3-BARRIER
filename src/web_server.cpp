@@ -1,6 +1,7 @@
 #include "web_server.h"
 #include "relay_control.h"
 #include "config_manager.h"
+#include "config.h"
 #include "tcp_push.h"
 #include "web_index.h"
 #include <Ethernet.h>
