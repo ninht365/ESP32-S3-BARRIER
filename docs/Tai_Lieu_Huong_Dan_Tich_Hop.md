@@ -22,22 +22,47 @@ Hệ thống điều khiển Barrier trung tâm sử dụng board ESP32-S3-ETH-8
 
 ---
 
-## 2. HƯỚNG DẪN KẾT NỐI PHẦN CỨNG & ĐƯA MÁY TÍNH VỀ CÙNG DẢI IP
+## 2. HƯỚNG DẪN NẠP FIRMWARE & CẬP NHẬT PHẦN MỀM (DÀNH CHO KỸ THUẬT VIÊN)
 
-### 2.1. Cấu hình IP Mặc định của Thiết bị
+Trong quá trình bảo trì hoặc lắp đặt bo mạch thay thế, kỹ thuật viên có thể tự cập nhật phần mềm cho ESP32-S3 cực kỳ nhanh chóng thông qua bộ công cụ tự động (1-Click) mà không cần cài đặt môi trường lập trình.
+
+### 2.1. Chuẩn bị công cụ
+- Cáp kết nối USB Type-C có tính năng truyền dữ liệu.
+- Máy tính chạy hệ điều hành Windows đã cài sẵn Driver CH340 hoặc CP210x (để nhận diện cổng COM).
+- Gói phần mềm: `Tool_Nap_FW_Barrier_v1.0.zip` (Tải từ mục Releases trên GitHub).
+
+### 2.2. Quy trình nạp Firmware
+- **Bước 1:** Tải gói `Tool_Nap_FW_Barrier_v1.0.zip` về máy tính và click chuột phải chọn **Extract Here** (Giải nén).
+- **Bước 2:** Cắm cáp USB Type-C kết nối mạch với máy tính.
+- **Bước 3:** Mở thư mục vừa giải nén, bạn sẽ thấy 2 file chạy tự động (`.bat`). Hãy click đúp chuột chạy file tương ứng với tình trạng thực tế của bo mạch:
+  - **Lựa chọn A - Chạy file `1_Cap_Nhat_Code.bat` (Dành cho mạch CŨ đang sử dụng):**
+    - *Tác dụng:* Chỉ nạp đè phần logic chương trình mới.
+    - *Đặc điểm:* An toàn tuyệt đối. Giữ nguyên 100% cấu hình IP tĩnh và thông số mạng mà mạch đang sử dụng. Không cần phải setup lại mạng.
+  - **Lựa chọn B - Chạy file `2_Nap_Mach_Moi.bat` (Dành cho mạch MỚI TINH chưa từng nạp code):**
+    - *Tác dụng:* Xóa trắng bộ nhớ và nạp lại từ móng toàn bộ hệ điều hành (Bootloader, Partitions, Firmware).
+    - *Đặc điểm:* Sau khi nạp xong, mạch sẽ quay về trạng thái xuất xưởng với IP mặc định là `192.168.1.200`. Kỹ thuật viên cần làm lại các bước ở **Mục 3.3** để cấu hình lại mạng.
+- **Bước 4:** Một cửa sổ màu đen (Command Prompt) sẽ hiện ra. Tool sẽ tự động dò tìm cổng COM và bắt đầu nạp. Bạn chỉ cần đợi thanh tiến trình chạy đến 100%.
+- **Bước 5:** Khi màn hình hiện thông báo `[THANH CONG]`, bạn có thể rút cáp USB. Quá trình nạp hoàn tất. Bo mạch đã sẵn sàng hoạt động với phiên bản phần mềm mới nhất.
+
+---
+
+
+## 3. HƯỚNG DẪN KẾT NỐI PHẦN CỨNG & ĐƯA MÁY TÍNH VỀ CÙNG DẢI IP
+
+### 3.1. Cấu hình IP Mặc định của Thiết bị
 - **Địa chỉ IP mặc định:** `192.168.1.200`
 - **Default Gateway:** `192.168.1.1`
 - **Subnet Mask:** `255.255.255.0`
 - **Cổng Web UI:** `80` (Truy cập: `http://192.168.1.200`)
 - **Cổng TCP Push:** `8080`
 
-### 2.2. Giải thích cơ chế Địa chỉ IP trong Mạng LAN
+### 3.2. Giải thích cơ chế Địa chỉ IP trong Mạng LAN
 Để Máy tính và ESP32 có thể giao tiếp được với nhau qua cáp LAN:
 - **Địa chỉ IP Máy tính (VD: `192.168.1.100`):** Địa chỉ duy nhất của card mạng máy tính.
 - **Địa chỉ IP ESP32 (`192.168.1.200`):** Địa chỉ duy nhất của bo mạch điều khiển.
 - **Quy tắc kết nối:** Hai thiết bị phải có địa chỉ **CÙNG DẢI MẠNG** (cùng 3 số đầu `192.168.1.x`) nhưng **KHÁC SỐ CUỐI** để tránh trùng lặp IP.
 
-### 2.3. Hướng dẫn Đặt IP Tĩnh cho Máy tính trên Windows (10 / 11)
+### 3.3. Hướng dẫn Đặt IP Tĩnh cho Máy tính trên Windows (10 / 11)
 
 Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router có DHCP), bạn cần cài IP tĩnh cho máy tính theo các bước chi tiết sau:
 
@@ -77,7 +102,7 @@ Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router c
 
 ---
 
-## 3. BẢNG LOGIC VẬN HÀNH & NHẬN DIỆN TRẠNG THÁI BARRIER
+## 4. BẢNG LOGIC VẬN HÀNH & NHẬN DIỆN TRẠNG THÁI BARRIER
 
 Hệ thống ESP32 đọc tín hiệu phản hồi từ các chân ngõ vào số (DI) kết nối với mạch CAME ZL38 (chân 5 và chân E) để xác định trạng thái vận hành của Barrier theo bảng logic quy chuẩn sau:
 
@@ -98,10 +123,10 @@ Hệ thống ESP32 đọc tín hiệu phản hồi từ các chân ngõ vào s�
 
 ---
 
-## 4. HƯỚNG DẪN SỬ DỤNG GIAO DIỆN WEB UI (3 TAB)
+## 5. HƯỚNG DẪN SỬ DỤNG GIAO DIỆN WEB UI (3 TAB)
 
 
-### 4.1. Tab 1: 🚧 Điều khiển Barrier (Barrier Control)
+### 5.1. Tab 1: 🚧 Điều khiển Barrier (Barrier Control)
 
 Tab chuyên dụng cho thao tác vận hành hàng ngày:
 
@@ -125,7 +150,7 @@ Tab chuyên dụng cho thao tác vận hành hàng ngày:
   - **Cảnh báo đứt mạng:** Nếu dây mạng bị rút hoặc đứt kết nối, một Banner đỏ rực sẽ hiện lên: `⚠️ MẤT KẾT NỐI MẠNG — ĐÃ KHÓA TOÀN BỘ THAO TÁC`, đảm bảo an toàn tuyệt đối.
 - **Khung Nhật ký (Log Box):** Hiển thị chi tiết 40 sự kiện gần nhất (Thời gian, tên lệnh, phản hồi thành công/thất bại).
 
-### 4.2. Tab 2: 🔧 Kiểm tra Phần cứng (Hardware Test)
+### 5.2. Tab 2: 🔧 Kiểm tra Phần cứng (Hardware Test)
 
 Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đường truyền I2C:
 
@@ -142,7 +167,7 @@ Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đườ
    - **TẮT (OFF):** Tắt rơ-le.
    - Đèn LED màu xanh chỉ thị trạng thái thực tế của từng rơ-le theo thời gian thực.
 
-### 4.3. Tab 3: ⚙️ Cấu hình Mạng & Hệ thống (Network Config)
+### 5.3. Tab 3: ⚙️ Cấu hình Mạng & Hệ thống (Network Config)
 
 Tab cho phép thay đổi thông số mạng tĩnh và lưu cố định vào bộ nhớ NVS (không bị mất khi tắt điện):
 
@@ -164,12 +189,12 @@ Tab cho phép thay đổi thông số mạng tĩnh và lưu cố định vào b�
 
 ---
 
-## 5. TÀI LIỆU TÍCH HỢP REST API (DÀNH CHO LẬP TRÌNH VIÊN)
+## 6. TÀI LIỆU TÍCH HỢP REST API (DÀNH CHO LẬP TRÌNH VIÊN)
 
 Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh điều khiển bằng HTTP GET.
 *(Ví dụ IP thiết bị: `192.168.1.200`)*
 
-### 5.1. Điều khiển Barrier (State Machine & Interlock)
+### 6.1. Điều khiển Barrier (State Machine & Interlock)
 *   **Endpoint:** `GET /api/barrier`
 *   **Tham số (Query Parameters):**
     *   `id` *(Tùy chọn)*: ID Barrier (`1` hoặc `2`, mặc định `1`).
@@ -212,7 +237,7 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 }
 ```
 
-### 5.2. Kiểm tra Trạng thái Toàn hệ thống
+### 6.2. Kiểm tra Trạng thái Toàn hệ thống
 *   **Endpoint:** `GET /api/status`
 
 **Phản hồi mẫu (JSON):**
@@ -237,7 +262,7 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 }
 ```
 
-### 5.3. Điều khiển Kênh Relay Thô (Raw Relay Control)
+### 6.3. Điều khiển Kênh Relay Thô (Raw Relay Control)
 *   **Endpoint:** `GET /api/relay`
 *   **Tham số:** `ch` (`1`–`8` hoặc `all`), `action` (`pulse` | `on` | `off`), `duration` (ms).
 
@@ -245,12 +270,12 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 `GET http://192.168.1.200/api/relay?ch=3&action=on`
 
 
-### 5.4. Đổi IP qua API
+### 6.4. Đổi IP qua API
 *   **Endpoint:** `GET /api/config/setip?ip=192.168.1.150&gw=192.168.1.1&sn=255.255.255.0`
 
 ---
 
-## 6. TÀI LIỆU TÍCH HỢP TCP PUSH SERVER (PORT 8080 - REALTIME)
+## 7. TÀI LIỆU TÍCH HỢP TCP PUSH SERVER (PORT 8080 - REALTIME)
 
 Giúp phần mềm bãi xe không cần tốn tài nguyên gọi API (polling) liên tục.
 
@@ -258,7 +283,7 @@ Giúp phần mềm bãi xe không cần tốn tài nguyên gọi API (polling) l
 - **Tối đa client:** 4 kết nối đồng thời.
 - **Định dạng dữ liệu:** JSON (mỗi sự kiện nằm trên 1 dòng kết thúc bằng `\r\n`).
 
-### 6.1. Hướng dẫn Cấu hình Phần mềm PuTTY để Test Nhận Bản tin Realtime
+### 7.1. Hướng dẫn Cấu hình Phần mềm PuTTY để Test Nhận Bản tin Realtime
 
 Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin sự kiện TCP Push (Port 8080) từ ESP32 mà không cần viết code phần mềm:
 
@@ -285,12 +310,12 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
   <em>Hình 5: Nhận bản tin sự kiện JSON thời gian thực trên PuTTY.</em>
 </p>
 
-### 6.2. Bản tin khi vừa kết nối thành công (Welcome message):
+### 7.2. Bản tin khi vừa kết nối thành công (Welcome message):
 ```json
 {"event":"connected","ip":"192.168.1.200","port":8080,"version":"1.0"}
 ```
 
-### 6.3. Bản tin Sự kiện đẩy về Thời gian thực (Event Push):
+### 7.3. Bản tin Sự kiện đẩy về Thời gian thực (Event Push):
 ```json
 {"event":"barrier_cmd","barrier":1,"channel":1,"action":"open","duration_ms":400,"timestamp_ms":12345}
 {"event":"barrier_state","barrier":1,"state":"OPENING","timestamp_ms":12345}
@@ -301,11 +326,11 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
 
 ---
 
-## 7. HƯỚNG DẪN KHẮC PHỤC SỰ CỐ (TROUBLESHOOTING)
+## 8. HƯỚNG DẪN KHẮC PHỤC SỰ CỐ (TROUBLESHOOTING)
 
 | Triệu chứng | Nguyên nhân có thể | Cách khắc phục |
 |---|---|---|
-| Không gõ được `http://192.168.1.200` trên máy tính | • Cáp mạng bị lỏng.<br>• Máy tính chưa đặt IP dải `192.168.1.x`. | • Kiểm tra đèn LED cổng RJ45 sáng/chớp.<br>• Làm theo mục 2.3 để đặt IP máy tính thành `192.168.1.100`. |
+| Không gõ được `http://192.168.1.200` trên máy tính | • Cáp mạng bị lỏng.<br>• Máy tính chưa đặt IP dải `192.168.1.x`. | • Kiểm tra đèn LED cổng RJ45 sáng/chớp.<br>• Làm theo mục 3.3 để đặt IP máy tính thành `192.168.1.100`. |
 | Báo lỗi `Request Timed Out` khi ping | • Khác dải IP Subnet.<br>• ESP32 chưa cấp nguồn. | • Đặt lại Subnet Mask `255.255.255.0`.<br>• Kiểm tra nguồn DC cấp cho ESP32. |
 | Đèn Web UI hiện `OFFLINE` màu đỏ | • Dứt dây mạng LAN.<br>• ESP32 đang khởi động lại. | • Kiểm tra lại dây cáp LAN.<br>• Chờ 5 giây rồi tải lại trang (`Ctrl + F5`). |
 | Đổi IP xong bị mất kết nối Web | Máy tính chưa đổi dải IP theo IP mới của ESP32. | Đổi IP tĩnh máy tính sang cùng dải với IP mới (Ví dụ đổi ESP32 thành `10.0.0.200` thì đổi máy tính thành `10.0.0.100`). |
