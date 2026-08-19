@@ -35,9 +35,11 @@ Trong quá trình bảo trì hoặc lắp đặt bo mạch thay thế, kỹ thu�
 - **Bước 1:** Tải gói `Tool_Nap_FW_Barrier_v1.0.zip` về máy tính và click chuột phải chọn **Extract Here** (Giải nén).
 - **Bước 2:** Cắm cáp USB Type-C kết nối mạch với máy tính.
 - **Bước 3:** Mở thư mục vừa giải nén, bạn sẽ thấy 2 file chạy tự động (`.bat`). Hãy click đúp chuột chạy file tương ứng với tình trạng thực tế của bo mạch:
-<p align="center">
-  <img src="image-14.png" alt="Thư mục giải nén công cụ nạp Firmware">
-</p>
+
+  <p align="center">
+    <img src="image-14.png" alt="Thư mục giải nén công cụ nạp Firmware">
+  </p>
+
   - **Lựa chọn A - Chạy file `1_Cap_Nhat_Code.bat` (Dành cho mạch CŨ đang sử dụng):**
     - *Tác dụng:* Chỉ nạp đè phần logic chương trình mới.
     - *Đặc điểm:* An toàn tuyệt đối. Giữ nguyên 100% cấu hình IP tĩnh và thông số mạng mà mạch đang sử dụng. Không cần phải setup lại mạng.
