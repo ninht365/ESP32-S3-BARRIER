@@ -37,7 +37,7 @@ Trong quá trình bảo trì hoặc lắp đặt bo mạch thay thế, kỹ thu�
 - **Bước 3:** Mở thư mục vừa giải nén, bạn sẽ thấy 2 file chạy tự động (`.bat`). Hãy click đúp chuột chạy file tương ứng với tình trạng thực tế của bo mạch:
 
   <p align="center">
-    <img src="image-14.png" alt="Thư mục giải nén công cụ nạp Firmware">
+    <img src="thu-muc-giai-nen-firmware-tool.png" alt="Thư mục giải nén công cụ nạp Firmware">
   </p>
 
   - **Lựa chọn A - Chạy file `1_Cap_Nhat_Code.bat` (Dành cho mạch CŨ đang sử dụng):**
@@ -73,17 +73,17 @@ Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router c
 
 **Bước 1:** Nhấn tổ hợp phím **`Win + R`** ➔ Nhập **`ncpa.cpl`** ➔ Nhấn **Enter** để mở cửa sổ *Network Connections*.
 <p align="center">
-  <img src="image-4.png" alt="Mở lệnh ncpa.cpl">
+  <img src="mo-lenh-ncpa.png" alt="Mở lệnh ncpa.cpl">
 </p>
 
 **Bước 2:** Chuột phải vào biểu tượng card mạng **Ethernet** ➔ Chọn **Properties**.
 <p align="center">
-  <img src="image-5.png" alt="Chọn Ethernet Properties">
+  <img src="chon-ethernet-properties.png" alt="Chọn Ethernet Properties">
 </p>
 
 **Bước 3:** Cửa sổ mở ra, chọn **Internet Protocol Version 4 (TCP/IPv4)** ➔ Nhấn nút **Properties**.
 <p align="center">
-  <img src="image-6.png" alt="Chọn TCP/IPv4 Properties">
+  <img src="chon-tcp-ipv4-properties.png" alt="Chọn TCP/IPv4 Properties">
 </p>
 
 **Bước 4:** Tích chọn **Use the following IP address** và nhập các thông số:
@@ -91,7 +91,7 @@ Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router c
 - **Subnet mask:** `255.255.255.0`
 - **Default gateway:** `192.168.1.1` *(hoặc để trống)*
 <p align="center">
-  <img src="image-7.png" alt="Cấu hình IP tĩnh">
+  <img src="cau-hinh-ip-tinh.png" alt="Cấu hình IP tĩnh">
 </p>
 
 **Bước 5:** Nhấn **OK** ➔ Nhấn **Close** để lưu cấu hình.
@@ -100,7 +100,7 @@ Khi cắm cáp LAN trực tiếp từ máy tính vào ESP32 (không qua Router c
 - Mở CMD ➔ Gõ lệnh: `ping 192.168.1.200`
 - Nếu màn hình trả về `Reply from 192.168.1.200: bytes=32 time<1ms` ➔ **Đã kết nối thành công!**
 <p align="center">
-  <img src="image-8.png" alt="Kiểm tra ping thành công">
+  <img src="kiem-tra-ping-thanh-cong.png" alt="Kiểm tra ping thành công">
 </p>
 
 **Bước 7:** Mở trình duyệt Web (Chrome/Edge/Firefox) ➔ Gõ địa chỉ: **`http://192.168.1.200`** để truy cập giao diện điều khiển.
@@ -136,7 +136,7 @@ Hệ thống ESP32 đọc tín hiệu phản hồi từ các chân ngõ vào s�
 Tab chuyên dụng cho thao tác vận hành hàng ngày:
 
 <p align="center">
-  <img src="image-1.png" alt="Tab điều khiển chính"><br>
+  <img src="web-ui-tab-1-barrier-control.png" alt="Tab điều khiển chính"><br>
   <em>Hình 1: Tab điều khiển chính.</em>
 </p>
 
@@ -160,7 +160,7 @@ Tab chuyên dụng cho thao tác vận hành hàng ngày:
 Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đường truyền I2C:
 
 <p align="center">
-  <img src="image-2.png" alt="Tab kiểm tra phần cứng"><br>
+  <img src="web-ui-tab-2-hardware-test.png" alt="Tab kiểm tra phần cứng"><br>
   <em>Hình 2: Tab kiểm tra phần cứng.</em>
 </p>
 
@@ -177,7 +177,7 @@ Tab dành cho kỹ thuật viên kiểm tra độc lập các rơ-le và đườ
 Tab cho phép thay đổi thông số mạng tĩnh và lưu cố định vào bộ nhớ NVS (không bị mất khi tắt điện):
 
 <p align="center">
-  <img src="image-3.png" alt="Tab cấu hình địa chỉ IP"><br>
+  <img src="web-ui-tab-3-network-config.png" alt="Tab cấu hình địa chỉ IP"><br>
   <em>Hình 3: Tab cấu hình địa chỉ IP.</em>
 </p>
 
@@ -300,7 +300,7 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
 - **Connection type:** Tích chọn vào mục **`Raw`** (hoặc `Telnet`).
 
 <p align="center">
-  <img src="image-13.png" alt="Cấu hình kết nối TCP Socket trên PuTTY"><br>
+  <img src="putty-cau-hinh-tcp-socket.png" alt="Cấu hình kết nối TCP Socket trên PuTTY"><br>
   <em>Hình 4: Cấu hình kết nối TCP Socket (Port 8080) trên PuTTY.</em>
 </p>
 
@@ -311,7 +311,7 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
 - Khi bạn bấm các nút điều khiển **MỞ / DỪNG / ĐÓNG** trên Web UI hoặc có tín hiệu cảm biến DI, PuTTY sẽ tự động hiển thị các dòng JSON phản hồi thời gian thực.
 
 <p align="center">
-  <img src="image-12.png" alt="Nhận bản tin sự kiện JSON thời gian thực trên PuTTY"><br>
+  <img src="putty-nhan-ban-tin-json.png" alt="Nhận bản tin sự kiện JSON thời gian thực trên PuTTY"><br>
   <em>Hình 5: Nhận bản tin sự kiện JSON thời gian thực trên PuTTY.</em>
 </p>
 

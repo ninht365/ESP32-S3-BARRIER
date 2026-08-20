@@ -15,8 +15,8 @@ Hệ thống hỗ trợ quá trình điều khiển tự động và giám sát 
 Hệ thống sử dụng bo mạch lõi **Waveshare ESP32-S3 PoE ETH (8 Kênh Đầu Vào Số - 8 Kênh Rơ-le)** để kết nối với bo mạch **CAME ZL38** của Barrier. Cấu hình phần cứng được chia làm 2 làn độc lập:
 
 <div align="center">
-  <img src="image-10.png" width="45%" style="margin-right: 2%">
-  <img src="image-9.png" width="45%">
+  <img src="board-waveshare-esp32-s3-eth.png" width="45%" style="margin-right: 2%">
+  <img src="mach-barrier-came-zl38.png" width="45%">
   <br>
   <i>Hình 1 & 2: Board Waveshare ESP32-S3-ETH-8DI-8RO (trái) và Mạch Barrier CAME ZL38 (phải)</i>
 </div>
@@ -31,7 +31,7 @@ Hệ thống sử dụng bo mạch lõi **Waveshare ESP32-S3 PoE ETH (8 Kênh Đ
   - `DI1`: Giám sát trạng thái **Đang nâng/hạ** hoặc **Đã đóng hoàn toàn** (Nối vào chân `E` của ZL38).
 
 <div align="center">
-  <img src="image-11.png" width="70%">
+  <img src="so-do-ket-noi-tin-hieu-barrier.png" width="70%">
   <br>
   <i>Hình 3: Sơ đồ kết nối tín hiệu Điều khiển và Phản hồi dành cho 1 Barrier</i>
 </div>
@@ -94,7 +94,7 @@ Hệ thống sử dụng mạng LAN (Cổng RJ45 kết nối qua chip W5500) đ�
 - Tích hợp công cụ chẩn đoán phần cứng: Quét địa chỉ I2C, Test từng kênh Relay đơn lẻ, Cấu hình lại IP tĩnh hệ thống.
 
 <div align="center">
-  <img src="image-3.png" width="80%">
+  <img src="web-ui-tab-3-network-config.png" width="80%">
   <br>
   <i>Hình 4: Giao diện Web UI giám sát và điều khiển Barrier</i>
 </div>
