@@ -8,11 +8,19 @@
 ## 1. TỔNG QUAN HỆ THỐNG
 
 Hệ thống điều khiển Barrier trung tâm sử dụng board ESP32-S3-ETH-8DI-8RO.
+
+```text
+┌─────────────────┐        Cáp LAN Ethernet        ┌────────────────────────────────────────────────────────┐
+│ PC / Laptop     │◄──────────────────────────────►│                    ESP32-S3 Board                      │
+│ (192.168.1.100) │                                │  Web Server (Port 80)  |  TCP Push Server (Port 8080)  │
+└─────────────────┘                                └────────────────────────────────────────────────────────┘
 ```
-┌─────────────────┐     Cáp LAN Ethernet     ┌──────────────────────────────────────────────────────┐
-│ PC / Laptop     │◄────────────────────────►│                 ESP32-S3 Board                       │
-│ (192.168.1.100) │                          │  Web Server (Port 80)  |  TCP Push Server (Port 8080)│
-└─────────────────┘                          └──────────────────────────────────────────────────────┘
+
+```mermaid
+flowchart LR
+    PC["💻 PC / Laptop<br><code>192.168.1.100</code>"] <== "Cáp LAN Ethernet" ==> ESP["⚡ ESP32-S3 Board<br>Web Server (Port 80) | TCP Push Server (Port 8080)"]
+    style PC fill:#1e293b,stroke:#3b82f6,color:#fff
+    style ESP fill:#1e293b,stroke:#10b981,color:#fff
 ```
 
 ### Phương thức tương tác chính:
