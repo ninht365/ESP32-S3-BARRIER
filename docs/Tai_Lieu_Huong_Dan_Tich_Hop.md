@@ -274,7 +274,7 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
   "barrier_1_state": "OPEN",
   "barrier_2_state": "CLOSED",
   "barrier_3_state": "OPENING",
-  "barrier_4_state": "IDLE"
+  "barrier_4_state": "OPENING"
 }
 ```
 
