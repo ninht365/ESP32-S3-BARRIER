@@ -18,12 +18,11 @@ struct BarrierContext {
     BarrierAction lastAction = ACTION_OPEN; // Nhớ hướng di chuyển gần nhất từ lệnh
     uint8_t relayOpenCh;
     uint8_t relayCloseCh;
-    uint8_t relayStopCh;
     uint8_t diFullyOpenPin;
     uint8_t diMovingClosedPin;
 };
 
-static BarrierContext barriers[2];
+static BarrierContext barriers[4];
 
 // ==========================================
 // THAO TÁC I2C THẤP
@@ -69,25 +68,39 @@ void Relay_Init() {
     pinMode(DI7_PIN, INPUT_PULLUP);
     pinMode(DI8_PIN, INPUT_PULLUP);
 
-    // Cấu hình Barrier 1
+    // Cấu hình Barrier 1 (Ô tô 1)
     barriers[0].relayOpenCh = B1_RELAY_OPEN;
     barriers[0].relayCloseCh = B1_RELAY_CLOSE;
-    barriers[0].relayStopCh = B1_RELAY_STOP;
     barriers[0].diFullyOpenPin = DI2_PIN;
     barriers[0].diMovingClosedPin = DI1_PIN;
     barriers[0].lastDIMovingState = (digitalRead(DI1_PIN) == LOW);
-    barriers[0].lastDIToggleTime = millis() - 3000; // Giả lập đã đứng yên 3s
+    barriers[0].lastDIToggleTime = millis() - 3000;
 
-    // Cấu hình Barrier 2
+    // Cấu hình Barrier 2 (Xe máy 1)
     barriers[1].relayOpenCh = B2_RELAY_OPEN;
     barriers[1].relayCloseCh = B2_RELAY_CLOSE;
-    barriers[1].relayStopCh = B2_RELAY_STOP;
     barriers[1].diFullyOpenPin = DI4_PIN;
     barriers[1].diMovingClosedPin = DI3_PIN;
     barriers[1].lastDIMovingState = (digitalRead(DI3_PIN) == LOW);
-    barriers[1].lastDIToggleTime = millis() - 3000; // Giả lập đã đứng yên 3s
+    barriers[1].lastDIToggleTime = millis() - 3000;
 
-    Serial.printf("[RELAY] Khoi tao xong 2 Barrier.\n");
+    // Cấu hình Barrier 3 (Xe máy 2)
+    barriers[2].relayOpenCh = B3_RELAY_OPEN;
+    barriers[2].relayCloseCh = B3_RELAY_CLOSE;
+    barriers[2].diFullyOpenPin = DI6_PIN;
+    barriers[2].diMovingClosedPin = DI5_PIN;
+    barriers[2].lastDIMovingState = (digitalRead(DI5_PIN) == LOW);
+    barriers[2].lastDIToggleTime = millis() - 3000;
+
+    // Cấu hình Barrier 4 (Dự phòng)
+    barriers[3].relayOpenCh = B4_RELAY_OPEN;
+    barriers[3].relayCloseCh = B4_RELAY_CLOSE;
+    barriers[3].diFullyOpenPin = DI8_PIN;
+    barriers[3].diMovingClosedPin = DI7_PIN;
+    barriers[3].lastDIMovingState = (digitalRead(DI7_PIN) == LOW);
+    barriers[3].lastDIToggleTime = millis() - 3000;
+
+    Serial.printf("[RELAY] Khoi tao xong 4 Barrier.\n");
 }
 
 // ==========================================
@@ -135,8 +148,8 @@ void Relay_Loop() {
         }
     }
 
-    // 2. Đọc trạng thái DI cho 2 Barrier
-    for (int i = 0; i < 2; i++) {
+    // 2. Đọc trạng thái DI cho 4 Barrier
+    for (int i = 0; i < 4; i++) {
         // Optocoupler Active-LOW: digitalRead() == LOW nghĩa là có điện áp (+V) kích vào chân DI
         bool fullyOpen = (digitalRead(barriers[i].diFullyOpenPin) == LOW);
         bool movingClosed = (digitalRead(barriers[i].diMovingClosedPin) == LOW);
@@ -156,26 +169,26 @@ void Relay_Loop() {
         if (fullyOpen) {
             // 1. Mở hoàn toàn: DI2 = 1 (DI1 không quan tâm giá trị)
             newState = BARRIER_OPEN;
-        } else if (timeSinceToggle < 2000) {
-            // Đang nhấp nháy 0/1 -> Đang nâng hoặc đang hạ
-            if (barriers[i].state == BARRIER_OPEN || barriers[i].state == BARRIER_CLOSING) {
+        } else if (movingClosed && timeSinceToggle < 2000) {
+            // 2. Đang nâng/hạ: DI2 = 0; DI1 nhấp nháy 0/1 trong vòng 2s
+            if (barriers[i].lastAction == ACTION_CLOSE || barriers[i].state == BARRIER_CLOSING) {
                 newState = BARRIER_CLOSING;
             } else {
                 newState = BARRIER_OPENING; 
             }
-        } else if (movingClosed) {
-            // Đã đứng yên ở mức 1 quá 2s -> Đã đóng hoàn toàn
+        } else if (movingClosed && timeSinceToggle >= 2000) {
+            // 3. Đóng hoàn toàn: DI2 = 0; DI1 = 1 giữ liên tục >= 2s
             newState = BARRIER_CLOSED;
-        } else {
-            // Đã đứng yên ở mức 0 quá 2s -> Dừng lửng lơ
-            newState = BARRIER_STOPPED;
+        } else if (!movingClosed && timeSinceToggle >= 2000) {
+            // 4. DI2 = 0, DI1 = 0 từ giây thứ 2 đổ đi: Giữ nguyên trạng thái di chuyển dở dang (không có STOPPED)
+            // Không thay đổi newState (giữ nguyên barriers[i].state)
         }
 
         if (newState != barriers[i].state && newState != BARRIER_UNKNOWN) {
             barriers[i].state = newState;
             String evt = "{\"event\":\"barrier_state\",\"barrier\":" + String(i + 1) + ",\"state\":\"" + Relay_BarrierStateName(newState) + "\",\"timestamp_ms\":" + String(now) + "}";
             TcpPush_Broadcast(evt);
-            Serial.printf("[BARRIER %d] DI Phản Hồi -> DI1(Moving/Closed):%d | DI2(Open):%d => Trạng Thái: %s\n", 
+            Serial.printf("[BARRIER %d] DI Phản Hồi -> DI_Close:%d | DI_Open:%d => Trạng Thái: %s\n", 
                           i + 1, movingClosed ? 1 : 0, fullyOpen ? 1 : 0, Relay_BarrierStateName(newState));
         }
     }
@@ -185,7 +198,7 @@ void Relay_Loop() {
 // BARRIER INTERLOCK STATE MACHINE
 // ==========================================
 BarrierState Relay_GetBarrierState(uint8_t barrier_id) {
-    if (barrier_id < 1 || barrier_id > 2) return BARRIER_UNKNOWN;
+    if (barrier_id < 1 || barrier_id > 4) return BARRIER_UNKNOWN;
     return barriers[barrier_id - 1].state;
 }
 
@@ -196,13 +209,12 @@ const char* Relay_BarrierStateName(BarrierState state) {
         case BARRIER_OPEN:     return "OPEN";
         case BARRIER_CLOSING:  return "CLOSING";
         case BARRIER_CLOSED:   return "CLOSED";
-        case BARRIER_STOPPED:  return "STOPPED";
         default:               return "UNKNOWN";
     }
 }
 
 BarrierResult Relay_BarrierCmd(uint8_t barrier_id, BarrierAction action, uint16_t duration_ms) {
-    if (barrier_id < 1 || barrier_id > 2) return BARRIER_CMD_ERR_ID;
+    if (barrier_id < 1 || barrier_id > 4) return BARRIER_CMD_ERR_ID;
     int idx = barrier_id - 1;
     
     uint8_t ch = 0;
@@ -226,15 +238,6 @@ BarrierResult Relay_BarrierCmd(uint8_t barrier_id, BarrierAction action, uint16_
         actionName = "close";
         barriers[idx].state = BARRIER_CLOSING;
         barriers[idx].lastAction = ACTION_CLOSE;
-    } else if (action == ACTION_STOP) {
-        if (barriers[idx].state == BARRIER_STOPPED) {
-            Serial.printf("[BARRIER %d] Bo qua lenh DUNG vi dang o trang thai dung.\n", barrier_id);
-            return BARRIER_CMD_IGNORED;
-        }
-        ch = barriers[idx].relayStopCh;
-        actionName = "stop";
-        barriers[idx].state = BARRIER_STOPPED;
-        barriers[idx].lastAction = ACTION_STOP;
     }
 
     if (ch == 0) return BARRIER_CMD_ERR_ID;

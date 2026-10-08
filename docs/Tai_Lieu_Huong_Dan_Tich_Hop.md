@@ -30,10 +30,10 @@ Trong quá trình bảo trì hoặc lắp đặt bo mạch thay thế, kỹ thu�
 ### 2.1. Chuẩn bị công cụ
 - Cáp kết nối USB Type-C có tính năng truyền dữ liệu.
 - Máy tính chạy hệ điều hành Windows đã cài sẵn Driver CH340 hoặc CP210x (để nhận diện cổng COM).
-- Gói phần mềm: `Tool_Nap_FW_Barrier_v1.0.zip` (Tải từ mục Releases trên GitHub).
+- Gói phần mềm: `Tool_Nap_FW_Barrier_v2.0_4Barrier.zip` (Tải từ mục Releases trên GitHub).
 
 ### 2.2. Quy trình nạp Firmware
-- **Bước 1:** Tải gói `Tool_Nap_FW_Barrier_v1.0.zip` về máy tính và click chuột phải chọn **Extract Here** (Giải nén).
+- **Bước 1:** Tải gói `Tool_Nap_FW_Barrier_v2.0_4Barrier.zip` về máy tính và click chuột phải chọn **Extract Here** (Giải nén).
 - **Bước 2:** Cắm cáp USB Type-C kết nối mạch với máy tính.
 - **Bước 3:** Mở thư mục vừa giải nén, bạn sẽ thấy 2 file chạy tự động (`.bat`). Hãy click đúp chuột chạy file tương ứng với tình trạng thực tế của bo mạch:
 
@@ -121,7 +121,7 @@ Hệ thống ESP32 đọc tín hiệu phản hồi từ các chân ngõ vào s�
 | **`OPEN`** *(Mở hoàn toàn)* | **`1`** | *N/A* | *N/A* | Cần Barrier đã nâng hết cỡ lên đỉnh. Cảm biến ngắt hành trình báo mở. |
 | **`OPENING` / `CLOSING`** *(Đang nâng / Đang hạ)* | **`0`** | `0/1` | Đảo trạng thái nhấp nháy liên tục `< 2s` | Motor đang quay di chuyển cần barrier (hướng nâng/hạ xác định theo lệnh vừa phát). |
 | **`CLOSED`** *(Đóng hoàn toàn)* | **`0`** | **`1`** | Giữ nguyên mức `1` liên tục `≥ 2s` (không đảo) | Cần Barrier đã hạ xuống hết cỡ chạm đất. Tín hiệu giữ nguyên liên tục `1`. |
-| **`STOPPED`** *(Dừng ở vị trí lửng)* | **`0`** | **`0`** | Giữ nguyên mức `0` liên tục `≥ 2s` (không đảo) | Barrier bị dừng giữa chừng (do bấm nút STOP khẩn cấp hoặc gặp vật cản/cảm biến an toàn). |
+| **`OPENING` / `CLOSING`** *(Giữ trạng thái đang chạy)* | **`0`** | **`0`** | Giữ nguyên mức `0` liên tục `≥ 2s` (không đảo) | Đang di chuyển chưa tới bệ. Giữ nguyên trạng thái `OPENING` hoặc `CLOSING` trước đó (không có trạng thái Dừng lửng). |
 
 > 📌 **Ghi chú kỹ thuật về mức logic tín hiệu:**  
 > - **Mức `1` (Active):** Có điện áp `+24V` xuất từ ZL38 vào chân DI của ESP32 (Optocoupler cách ly dẫn ➔ GPIO reading = `LOW`).  
@@ -203,11 +203,15 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 ### 6.1. Điều khiển Barrier (State Machine & Interlock)
 *   **Endpoint:** `GET /api/barrier`
 *   **Tham số (Query Parameters):**
-    *   `id` *(Tùy chọn)*: ID Barrier (`1` hoặc `2`, mặc định `1`).
-    *   `action` *(Bắt buộc)*: `open` | `stop` | `close`
+    *   `id` *(Tùy chọn)*: ID Barrier (`1` đến `4`, mặc định `1`).
+        *   `1`: Barrier Ô tô 1 (Relay CH1/CH2, DI1/DI2)
+        *   `2`: Barrier Xe máy 1 (Relay CH3/CH4, DI3/DI4)
+        *   `3`: Barrier Xe máy 2 (Relay CH5/CH6, DI5/DI6)
+        *   `4`: Barrier Dự phòng (Relay CH7/CH8, DI7/DI8)
+    *   `action` *(Bắt buộc)*: `open` | `close`
     *   `duration` *(Tùy chọn)*: Thời gian xung (ms), mặc định `400`.
 
-**Ví dụ 1: Mở Barrier 1**  
+**Ví dụ 1: Mở Barrier 1 (Ô tô 1)**  
 `GET http://192.168.1.200/api/barrier?id=1&action=open`
 
 **Phản hồi thành công (JSON):**
@@ -221,25 +225,25 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
 }
 ```
 
-**Phản hồi khi DỪNG ngắt khẩn cấp:**
+**Phản hồi khi Đảo hướng di chuyển (Preemptive Reversal):**
 ```json
 {
-  "result": "preempted",
-  "barrier": 1,
-  "action": "stop",
-  "duration_ms": 400,
-  "current_state": "STOPPING"
-}
-```
-
-**Phản hồi khi bận (Barrier đang chạy):**
-```json
-{
-  "result": "busy",
+  "result": "ok",
   "barrier": 1,
   "action": "close",
   "duration_ms": 400,
-  "current_state": "OPENING"
+  "current_state": "CLOSING"
+}
+```
+
+**Phản hồi khi trùng lệnh (Bị bỏ qua):**
+```json
+{
+  "result": "ignored",
+  "barrier": 1,
+  "action": "open",
+  "duration_ms": 400,
+  "current_state": "OPEN"
 }
 ```
 
@@ -263,8 +267,16 @@ Dành cho nhà phát triển phần mềm bãi xe / Camera AI gửi lệnh đi�
   },
   "di1": 0,
   "di2": 1,
+  "di3": 0,
+  "di4": 0,
+  "di5": 0,
+  "di6": 0,
+  "di7": 0,
+  "di8": 0,
   "barrier_1_state": "OPEN",
-  "barrier_2_state": "CLOSED"
+  "barrier_2_state": "CLOSED",
+  "barrier_3_state": "OPENING",
+  "barrier_4_state": "IDLE"
 }
 ```
 

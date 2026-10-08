@@ -30,15 +30,22 @@
 #define DI7_PIN 10
 #define DI8_PIN 11
 
-// 4. CẤU HÌNH BARRIER 1 & 2 (RELAY CHANNELS)
-// Barrier 1
+// 4. CẤU HÌNH BARRIER 1 -> 4 (RELAY CHANNELS)
+// Barrier 1 (Ô tô 1)
 #define B1_RELAY_OPEN   1
 #define B1_RELAY_CLOSE  2
-#define B1_RELAY_STOP   3
-// Barrier 2
-#define B2_RELAY_OPEN   4
-#define B2_RELAY_CLOSE  5
-#define B2_RELAY_STOP   6
+
+// Barrier 2 (Xe máy 1)
+#define B2_RELAY_OPEN   3
+#define B2_RELAY_CLOSE  4
+
+// Barrier 3 (Xe máy 2)
+#define B3_RELAY_OPEN   5
+#define B3_RELAY_CLOSE  6
+
+// Barrier 4 (Dự phòng)
+#define B4_RELAY_OPEN   7
+#define B4_RELAY_CLOSE  8
 
 // 5. Thời gian xung mặc định (milliseconds)
 #define DEFAULT_PULSE_MS 400

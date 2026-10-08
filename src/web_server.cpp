@@ -110,7 +110,7 @@ void WebServer_Loop() {
             }
 
             // ==================================================
-            // ROUTE: GET /api/barrier?id=1|2&action=open|stop|close
+            // ROUTE: GET /api/barrier?id=1..4&action=open|close
             // ==================================================
             if (reqLine.indexOf("/api/barrier") != -1) {
                 if (Ethernet.linkStatus() != LinkON) {
@@ -127,13 +127,12 @@ void WebServer_Loop() {
 
                     BarrierAction act = (BarrierAction)0;
                     if      (action == "open")  act = ACTION_OPEN;
-                    else if (action == "stop")  act = ACTION_STOP;
                     else if (action == "close") act = ACTION_CLOSE;
 
                     if (act == 0) {
-                        sendJSON(client, "{\"result\":\"error\",\"error\":\"action phai la open/stop/close\"}", 400);
-                    } else if (barrier_id < 1 || barrier_id > 2) {
-                        sendJSON(client, "{\"result\":\"error\",\"error\":\"id phai la 1 hoac 2\"}", 400);
+                        sendJSON(client, "{\"result\":\"error\",\"error\":\"action phai la open hoac close\"}", 400);
+                    } else if (barrier_id < 1 || barrier_id > 4) {
+                        sendJSON(client, "{\"result\":\"error\",\"error\":\"id phai tu 1 den 4\"}", 400);
                     } else {
                         BarrierResult res = Relay_BarrierCmd(barrier_id, act, (uint16_t)duration);
                         String resStr = (res == BARRIER_CMD_OK)        ? "ok"
@@ -168,13 +167,21 @@ void WebServer_Loop() {
                     + ",\"subnet\":\""  + Config_GetSubnet().toString() + "\""
                     + ",\"uptime_s\":"  + String(uptimeSec)
                     + ",\"eth_link\":"  + (ethLink ? "true" : "false")
-                    + ",\"tcp_clien     ts\":" + String(TcpPush_ClientCount())
+                    + ",\"tcp_clients\":" + String(TcpPush_ClientCount())
                     + ",\"relays_byte\":"+ String(st)
                     + ",\"relays\":"    + chJson
                     + ",\"di1\":"       + String(digitalRead(DI1_PIN) == LOW ? 1 : 0)
                     + ",\"di2\":"       + String(digitalRead(DI2_PIN) == LOW ? 1 : 0)
+                    + ",\"di3\":"       + String(digitalRead(DI3_PIN) == LOW ? 1 : 0)
+                    + ",\"di4\":"       + String(digitalRead(DI4_PIN) == LOW ? 1 : 0)
+                    + ",\"di5\":"       + String(digitalRead(DI5_PIN) == LOW ? 1 : 0)
+                    + ",\"di6\":"       + String(digitalRead(DI6_PIN) == LOW ? 1 : 0)
+                    + ",\"di7\":"       + String(digitalRead(DI7_PIN) == LOW ? 1 : 0)
+                    + ",\"di8\":"       + String(digitalRead(DI8_PIN) == LOW ? 1 : 0)
                     + ",\"barrier_1_state\":\"" + String(Relay_BarrierStateName(Relay_GetBarrierState(1))) + "\""
                     + ",\"barrier_2_state\":\"" + String(Relay_BarrierStateName(Relay_GetBarrierState(2))) + "\""
+                    + ",\"barrier_3_state\":\"" + String(Relay_BarrierStateName(Relay_GetBarrierState(3))) + "\""
+                    + ",\"barrier_4_state\":\"" + String(Relay_BarrierStateName(Relay_GetBarrierState(4))) + "\""
                     + "}";
                 sendJSON(client, jsonResp);
 

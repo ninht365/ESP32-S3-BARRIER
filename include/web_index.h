@@ -145,19 +145,15 @@ body{background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
   <div class="dis-banner" id="dis-banner">⚠️ MẤT KẾT NỐI MẠNG — ĐÃ KHÓA TOÀN BỘ THAO TÁC</div>
 
   <div class="barrier-grid">
-    <!-- BARRIER 1 -->
+    <!-- BARRIER 1: Ô TÔ 1 -->
     <div class="barrier-card">
       <div class="barrier-title">
-        <h2>🚧 BARRIER 1</h2>
+        <h2>🚗 BARRIER 1 (Ô TÔ 1)</h2>
         <span class="state-badge state-UNKNOWN" id="b1-state-badge">UNKNOWN</span>
       </div>
-
       <div class="barrier-btns">
         <button class="b-btn open"  id="b1-btn-open"  onclick="barrierCmd(1, 'open')">
           <span class="icon">🔓</span><span>MỞ</span>
-        </button>
-        <button class="b-btn stop"  id="b1-btn-stop"  onclick="barrierCmd(1, 'stop')">
-          <span class="icon">✋</span><span>DỪNG</span>
         </button>
         <button class="b-btn close" id="b1-btn-close" onclick="barrierCmd(1, 'close')">
           <span class="icon">🔒</span><span>ĐÓNG</span>
@@ -165,21 +161,49 @@ body{background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
       </div>
     </div>
 
-    <!-- BARRIER 2 -->
+    <!-- BARRIER 2: XE MÁY 1 -->
     <div class="barrier-card">
       <div class="barrier-title">
-        <h2>🚧 BARRIER 2</h2>
+        <h2>🛵 BARRIER 2 (XE MÁY 1)</h2>
         <span class="state-badge state-UNKNOWN" id="b2-state-badge">UNKNOWN</span>
       </div>
-
       <div class="barrier-btns">
         <button class="b-btn open"  id="b2-btn-open"  onclick="barrierCmd(2, 'open')">
           <span class="icon">🔓</span><span>MỞ</span>
         </button>
-        <button class="b-btn stop"  id="b2-btn-stop"  onclick="barrierCmd(2, 'stop')">
-          <span class="icon">✋</span><span>DỪNG</span>
-        </button>
         <button class="b-btn close" id="b2-btn-close" onclick="barrierCmd(2, 'close')">
+          <span class="icon">🔒</span><span>ĐÓNG</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- BARRIER 3: XE MÁY 2 -->
+    <div class="barrier-card">
+      <div class="barrier-title">
+        <h2>🛵 BARRIER 3 (XE MÁY 2)</h2>
+        <span class="state-badge state-UNKNOWN" id="b3-state-badge">UNKNOWN</span>
+      </div>
+      <div class="barrier-btns">
+        <button class="b-btn open"  id="b3-btn-open"  onclick="barrierCmd(3, 'open')">
+          <span class="icon">🔓</span><span>MỞ</span>
+        </button>
+        <button class="b-btn close" id="b3-btn-close" onclick="barrierCmd(3, 'close')">
+          <span class="icon">🔒</span><span>ĐÓNG</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- BARRIER 4: DỰ PHÒNG -->
+    <div class="barrier-card">
+      <div class="barrier-title">
+        <h2>⚙️ BARRIER 4 (DỰ PHÒNG)</h2>
+        <span class="state-badge state-UNKNOWN" id="b4-state-badge">UNKNOWN</span>
+      </div>
+      <div class="barrier-btns">
+        <button class="b-btn open"  id="b4-btn-open"  onclick="barrierCmd(4, 'open')">
+          <span class="icon">🔓</span><span>MỞ</span>
+        </button>
+        <button class="b-btn close" id="b4-btn-close" onclick="barrierCmd(4, 'close')">
           <span class="icon">🔒</span><span>ĐÓNG</span>
         </button>
       </div>
@@ -276,12 +300,10 @@ let networkLost = false;
 function updateButtonStates(id, st) {
   const lockAll = isRequestInFlight || networkLost;
   const btnOpen  = document.getElementById('b'+id+'-btn-open');
-  const btnStop  = document.getElementById('b'+id+'-btn-stop');
   const btnClose = document.getElementById('b'+id+'-btn-close');
 
   if (btnOpen)  btnOpen.disabled  = lockAll || (st === 'OPENING') || (st === 'CLOSING') || (st === 'OPEN');
   if (btnClose) btnClose.disabled = lockAll || (st === 'CLOSING') || (st === 'OPENING') || (st === 'CLOSED');
-  if (btnStop)  btnStop.disabled  = lockAll || (st === 'OPEN') || (st === 'CLOSED') || (st === 'STOPPED') || (st === 'IDLE');
 }
 
 function handleNetworkLoss(msg) {
@@ -293,8 +315,7 @@ function handleNetworkLoss(msg) {
     badge.className = 'badge err';
     addLog('⚠️ MẤT KẾT NỐI MẠNG: ' + (msg || 'Đã khóa toàn bộ thao tác'), 'err');
   }
-  updateButtonStates(1, 'IDLE');
-  updateButtonStates(2, 'IDLE');
+  for (let i=1;i<=4;i++) updateButtonStates(i, 'IDLE');
 }
 
 // =================== STATUS UPDATE ===================
@@ -329,19 +350,16 @@ async function updateStatus() {
     document.getElementById('tcp-count').innerText = cnt;
     document.getElementById('tcp-dot').className = 'tcp-dot' + (cnt>0?' active':'');
 
-    // Barrier 1 state
-    const st1 = d.barrier_1_state || 'UNKNOWN';
-    const sb1 = document.getElementById('b1-state-badge');
-    sb1.innerText = st1;
-    sb1.className = 'state-badge state-'+st1;
-    updateButtonStates(1, st1);
-
-    // Barrier 2 state
-    const st2 = d.barrier_2_state || 'UNKNOWN';
-    const sb2 = document.getElementById('b2-state-badge');
-    sb2.innerText = st2;
-    sb2.className = 'state-badge state-'+st2;
-    updateButtonStates(2, st2);
+    // Barrier 1..4 states
+    for (let i=1;i<=4;i++) {
+      const st = d['barrier_'+i+'_state'] || 'UNKNOWN';
+      const sb = document.getElementById('b'+i+'-state-badge');
+      if (sb) {
+        sb.innerText = st;
+        sb.className = 'state-badge state-'+st;
+      }
+      updateButtonStates(i, st);
+    }
 
     // TCP address for config tab
     if (d.ip) {
@@ -377,8 +395,7 @@ async function barrierCmd(id, action) {
   if (networkLost || isRequestInFlight) return;
 
   isRequestInFlight = true;
-  updateButtonStates(1, 'IDLE'); // Khóa tạm thời
-  updateButtonStates(2, 'IDLE');
+  for (let i=1;i<=4;i++) updateButtonStates(i, 'IDLE');
 
   addLog('Gửi lệnh: B' + id + ' ' + action.toUpperCase() + '...', 'info');
   const controller = new AbortController();
