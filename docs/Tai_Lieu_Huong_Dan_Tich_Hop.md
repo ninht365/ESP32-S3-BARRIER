@@ -141,16 +141,14 @@ Tab chuyên dụng cho thao tác vận hành hàng ngày:
   <em>Hình 1: Tab điều khiển chính.</em>
 </p>
 
-- **Bảng thông tin Barrier 1 & Barrier 2:**
+- **Bảng thông tin 4 Barrier (Barrier 1: Ô tô 1, Barrier 2: Xe máy 1, Barrier 3: Xe máy 2, Barrier 4: Dự phòng):**
   - **Nhãn trạng thái (State Badge):** Hiển thị trạng thái tức thì theo màu sắc:
     - <span style="color:#94a3b8;font-weight:bold">IDLE / UNKNOWN</span>: Rảnh, sẵn sàng nhận lệnh.
     - <span style="color:#6ee7b7;font-weight:bold">OPENING / OPEN</span>: Barrier đang mở hoặc đã mở hoàn toàn.
     - <span style="color:#fca5a5;font-weight:bold">CLOSING / CLOSED</span>: Barrier đang đóng hoặc đã đóng hoàn toàn.
-    - <span style="color:#fde68a;font-weight:bold">STOPPING / STOPPED</span>: Barrier đã dừng ngắt khẩn cấp.
-- **3 Nút lệnh điều khiển:**
-  - **🔓 MỞ (OPEN):** Kích rơ-le Mở (CH1 / CH4).
-  - **✋ DỪNG (STOP):** Kích rơ-le Dừng khẩn cấp (CH2 / CH5), ngắt ngay lập tức lệnh Mở/Đóng.
-  - **🔒 ĐÓNG (CLOSE):** Kích rơ-le Đóng (CH3 / CH6).
+- **2 Nút lệnh điều khiển chính cho từng Barrier:**
+  - **🔓 MỞ (OPEN):** Kích rơ-le Mở (CH1 cho Ô tô 1, CH3 cho Xe máy 1, CH5 cho Xe máy 2, CH7 cho Dự phòng).
+  - **🔒 ĐÓNG (CLOSE):** Kích rơ-le Đóng (CH2 cho Ô tô 1, CH4 cho Xe máy 1, CH6 cho Xe máy 2, CH8 cho Dự phòng).
 - **Cơ chế Khóa UI thông minh:**
   - Để tránh người dùng bấm nhầm hoặc spam nút, khi Barrier ở trạng thái nào thì nút tương ứng sẽ tự động bị mờ và khóa cấm bấm (`disabled`).
   - **Cảnh báo đứt mạng:** Nếu dây mạng bị rút hoặc đứt kết nối, một Banner đỏ rực sẽ hiện lên: `⚠️ MẤT KẾT NỐI MẠNG — ĐÃ KHÓA TOÀN BỘ THAO TÁC`, đảm bảo an toàn tuyệt đối.
@@ -321,7 +319,7 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
 
 **Bước 4:** Cửa sổ dòng lệnh màn hình đen hiện ra:
 - ESP32 ngay lập tức trả về bản tin chào mừng JSON: `{"event":"connected",...}`
-- Khi bạn bấm các nút điều khiển **MỞ / DỪNG / ĐÓNG** trên Web UI hoặc có tín hiệu cảm biến DI, PuTTY sẽ tự động hiển thị các dòng JSON phản hồi thời gian thực.
+- Khi bạn bấm các nút điều khiển **MỞ / ĐÓNG** trên Web UI hoặc có tín hiệu cảm biến DI từ ZL38, PuTTY sẽ tự động hiển thị các dòng JSON phản hồi thời gian thực.
 
 <p align="center">
   <img src="putty-nhan-ban-tin-json.png" alt="Nhận bản tin sự kiện JSON thời gian thực trên PuTTY"><br>
@@ -330,7 +328,7 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
 
 ### 7.2. Bản tin khi vừa kết nối thành công (Welcome message):
 ```json
-{"event":"connected","ip":"192.168.1.200","port":8080,"version":"1.0"}
+{"event":"connected","ip":"192.168.1.200","port":8080,"version":"2.0_4Barrier"}
 ```
 
 ### 7.3. Bản tin Sự kiện đẩy về Thời gian thực (Event Push):
@@ -338,8 +336,10 @@ Dành cho kỹ thuật viên muốn kiểm tra nhanh việc nhận bản tin s�
 {"event":"barrier_cmd","barrier":1,"channel":1,"action":"open","duration_ms":400,"timestamp_ms":12345}
 {"event":"barrier_state","barrier":1,"state":"OPENING","timestamp_ms":12345}
 {"event":"relay_off","channel":1,"timestamp_ms":12745}
-{"event":"barrier_state","barrier":1,"state":"IDLE","timestamp_ms":12745}
-{"event":"relay_preempted","barrier":1,"channel":1,"preempted_by":"STOP","timestamp_ms":13000}
+{"event":"barrier_state","barrier":1,"state":"OPEN","timestamp_ms":14200}
+{"event":"barrier_cmd","barrier":1,"channel":2,"action":"close","duration_ms":400,"timestamp_ms":18000}
+{"event":"barrier_state","barrier":1,"state":"CLOSING","timestamp_ms":18000}
+{"event":"barrier_state","barrier":1,"state":"CLOSED","timestamp_ms":20500}
 ```
 
 ---
